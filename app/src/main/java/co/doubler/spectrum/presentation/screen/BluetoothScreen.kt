@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,8 +60,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.doubler.spectrum.domain.model.BluetoothDeviceType
+import co.doubler.spectrum.domain.model.EcholocationState
 import co.doubler.spectrum.domain.model.ScanMode
 import co.doubler.spectrum.presentation.components.ArSceneView
+import co.doubler.spectrum.presentation.components.EcholocationOverlay
 import co.doubler.spectrum.presentation.model.BluetoothDeviceNode
 import co.doubler.spectrum.presentation.viewmodel.BluetoothViewModel
 import co.doubler.spectrum.rendering.bluetooth.BluetoothOverlayRenderer
@@ -200,7 +203,7 @@ private fun BluetoothArContent(viewModel: BluetoothViewModel) {
 
                 // ── Device list + stats bar at bottom ──
                 Column(modifier = Modifier.align(Alignment.BottomCenter)) {
-                    BtDevicePanel(devices = uiState.devices)
+                    BtDevicePanel(devices = uiState.devices, onLocate = viewModel::activateEcholocation)
                     BtStatsBar(
                         total = uiState.totalDeviceCount,
                         connected = uiState.connectedDevices.size
@@ -214,6 +217,13 @@ private fun BluetoothArContent(viewModel: BluetoothViewModel) {
                 modifier = Modifier.align(Alignment.Center),
                 color = BluetoothAccent,
                 strokeWidth = 2.dp
+            )
+        }
+
+        if (uiState.echolocationState !is EcholocationState.Idle) {
+            EcholocationOverlay(
+                state = uiState.echolocationState,
+                onDismiss = viewModel::deactivateEcholocation
             )
         }
     }
@@ -291,6 +301,7 @@ private fun ConstellationNode(
 @Composable
 private fun BtDevicePanel(
     devices: List<BluetoothDeviceNode>,
+    onLocate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -351,7 +362,7 @@ private fun BtDevicePanel(
         ) {
             LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp)) {
                 items(devices, key = { it.address }) { device ->
-                    BtDeviceRow(device = device)
+                    BtDeviceRow(device = device, onLocate = onLocate)
                     HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.5.dp)
                 }
             }
@@ -360,7 +371,7 @@ private fun BtDevicePanel(
 }
 
 @Composable
-private fun BtDeviceRow(device: BluetoothDeviceNode) {
+private fun BtDeviceRow(device: BluetoothDeviceNode, onLocate: (String) -> Unit) {
     val color = nodeColor(device)
     Row(
         modifier = Modifier
@@ -412,6 +423,22 @@ private fun BtDeviceRow(device: BluetoothDeviceNode) {
                 fontFamily = DataFontFamily,
                 fontSize = 9.sp,
                 color = TextSecondary
+            )
+        }
+        Button(
+            onClick = { onLocate(device.address) },
+            modifier = Modifier.height(28.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = BluetoothAccent,
+                contentColor = NearBlack
+            ),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+        ) {
+            Text(
+                text = "LOCALIZAR",
+                fontFamily = DataFontFamily,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold
             )
         }
     }

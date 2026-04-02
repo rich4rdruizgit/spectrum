@@ -1,11 +1,17 @@
 package co.doubler.spectrum.presentation.viewmodel
 
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.doubler.spectrum.ar.ArSessionManager
 import co.doubler.spectrum.domain.model.BluetoothDeviceType
 import co.doubler.spectrum.domain.model.BluetoothNode
+import co.doubler.spectrum.domain.model.EcholocationState
+import co.doubler.spectrum.domain.model.HeadingRssiTracker
 import co.doubler.spectrum.domain.repository.BluetoothRepository
 import co.doubler.spectrum.presentation.model.BluetoothDeviceNode
 import co.doubler.spectrum.presentation.model.BluetoothUiState
@@ -22,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.math.cos
@@ -30,7 +37,8 @@ import kotlin.math.sin
 @HiltViewModel
 class BluetoothViewModel @Inject constructor(
     private val bluetoothRepository: BluetoothRepository,
-    val sessionManager: ArSessionManager
+    val sessionManager: ArSessionManager,
+    private val sensorManager: SensorManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BluetoothUiState(isScanning = true))
@@ -45,8 +53,58 @@ class BluetoothViewModel @Inject constructor(
     val screenPositionsRef: AtomicReference<Map<String, Offset>> =
         AtomicReference(emptyMap())
 
+    private var rotationListener: SensorEventListener? = null
+    private val rotationMatrix = FloatArray(9)
+    private val orientationAngles = FloatArray(3)
+
     init {
         observeBluetoothScans()
+    }
+
+    fun activateEcholocation(address: String) {
+        val tracker = HeadingRssiTracker()
+        _uiState.update { it.copy(echolocationState = EcholocationState.Active(address, tracker)) }
+        registerRotationListener(tracker, address)
+    }
+
+    fun deactivateEcholocation() {
+        unregisterRotationListener()
+        _uiState.update { it.copy(echolocationState = EcholocationState.Idle) }
+    }
+
+    private fun registerRotationListener(tracker: HeadingRssiTracker, address: String) {
+        val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) ?: return
+        rotationListener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                SensorManager.getOrientation(rotationMatrix, orientationAngles)
+                val headingDeg = ((Math.toDegrees(orientationAngles[0].toDouble()).toFloat() + 360f) % 360f)
+                val rssi = _uiState.value.devices.find { it.address == address }?.rssi ?: return
+                tracker.record(headingDeg, rssi)
+                val confidence = tracker.getConfidence()
+                val bestHeading = tracker.getBestHeading()
+                if (confidence >= 0.4f && bestHeading != null) {
+                    unregisterRotationListener()
+                    _uiState.update {
+                        it.copy(echolocationState = EcholocationState.Result(address, bestHeading, confidence))
+                    }
+                } else {
+                    _uiState.update { it.copy() }
+                }
+            }
+            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+        }
+        sensorManager.registerListener(rotationListener, sensor, SensorManager.SENSOR_DELAY_GAME)
+    }
+
+    private fun unregisterRotationListener() {
+        rotationListener?.let { sensorManager.unregisterListener(it) }
+        rotationListener = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        unregisterRotationListener()
     }
 
     private fun observeBluetoothScans() {
@@ -57,13 +115,15 @@ class BluetoothViewModel @Inject constructor(
 
     private fun handleScanResult(nodes: List<BluetoothNode>) {
         if (nodes.isEmpty()) {
-            _uiState.value = BluetoothUiState(
-                devices = emptyList(),
-                connectedDevices = emptyList(),
-                isScanning = false,
-                totalDeviceCount = 0,
-                screenPositions = screenPositionsRef.get()
-            )
+            _uiState.update {
+                it.copy(
+                    devices = emptyList(),
+                    connectedDevices = emptyList(),
+                    isScanning = false,
+                    totalDeviceCount = 0,
+                    screenPositions = screenPositionsRef.get()
+                )
+            }
             bluetoothDevicesRef.set(emptyList())
             return
         }
@@ -76,16 +136,16 @@ class BluetoothViewModel @Inject constructor(
         val connected = deviceNodes.filter { it.isConnected }
         val isAnomalyActive = deviceNodes.any { it.estimatedDistance > 0f && it.estimatedDistance < 0.5f }
 
-        val state = BluetoothUiState(
-            devices = deviceNodes,
-            connectedDevices = connected,
-            isScanning = false,
-            totalDeviceCount = nodes.size,
-            screenPositions = screenPositionsRef.get(),
-            isAnomalyActive = isAnomalyActive
-        )
-
-        _uiState.value = state
+        _uiState.update {
+            it.copy(
+                devices = deviceNodes,
+                connectedDevices = connected,
+                isScanning = false,
+                totalDeviceCount = nodes.size,
+                screenPositions = screenPositionsRef.get(),
+                isAnomalyActive = isAnomalyActive
+            )
+        }
         bluetoothDevicesRef.set(deviceNodes)
     }
 
