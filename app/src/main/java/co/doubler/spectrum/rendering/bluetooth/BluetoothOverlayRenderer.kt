@@ -52,7 +52,6 @@ class BluetoothOverlayRenderer(
     private var uTimeLoc: Int = -1
     private var uAspectRatioLoc: Int = -1
     private var uNodeRadiusLoc: Int = -1
-    private var uRingSpeedLoc: Int = -1
     private var uRingWidthLoc: Int = -1
     private var uLineWidthLoc: Int = -1
     private var uLineIntensityLoc: Int = -1
@@ -90,7 +89,6 @@ class BluetoothOverlayRenderer(
             uTimeLoc         = sp.getUniformLocation("u_Time")
             uAspectRatioLoc  = sp.getUniformLocation("u_AspectRatio")
             uNodeRadiusLoc   = sp.getUniformLocation("u_NodeRadius")
-            uRingSpeedLoc    = sp.getUniformLocation("u_RingSpeed")
             uRingWidthLoc    = sp.getUniformLocation("u_RingWidth")
             uLineWidthLoc    = sp.getUniformLocation("u_LineWidth")
             uLineIntensityLoc = sp.getUniformLocation("u_LineIntensity")
@@ -193,7 +191,6 @@ class BluetoothOverlayRenderer(
         GLES30.glUniform1f(uTimeLoc, elapsedSec)
         GLES30.glUniform1f(uAspectRatioLoc, aspectRatio)
         GLES30.glUniform1f(uNodeRadiusLoc, Constants.BT_NODE_RADIUS)
-        GLES30.glUniform1f(uRingSpeedLoc, Constants.BT_RING_SPEED)
         GLES30.glUniform1f(uRingWidthLoc, Constants.BT_RING_WIDTH)
         GLES30.glUniform1f(uLineWidthLoc, Constants.BT_LINE_WIDTH)
         GLES30.glUniform1f(uLineIntensityLoc, Constants.BT_LINE_INTENSITY)
