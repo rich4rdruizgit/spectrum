@@ -161,7 +161,7 @@ class CameraBackgroundRenderer(private val context: Context) {
         val program = shaderProgram ?: return
         program.use()
 
-        GLES30.glUniform1f(uVignetteStrengthLoc, 0.4f)
+        GLES30.glUniform1f(uVignetteStrengthLoc, 0.55f)
         GLES30.glUniform1f(uContrastLoc, 1.1f)
         GLES30.glUniform1f(uSaturationLoc, 0.85f)
         GLES30.glUniform3fv(uTintColorLoc, 1, postFxTint, 0)

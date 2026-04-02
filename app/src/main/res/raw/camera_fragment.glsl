@@ -24,9 +24,10 @@ void main() {
 
     color *= u_TintColor;
 
-    vec2 uv = v_TexCoord * 2.0 - 1.0;
-    float dist = length(uv);
-    float vignette = 1.0 - smoothstep(0.4, 1.4, dist * u_VignetteStrength * 1.5);
+    // Rectangular frame vignette — four independent edge falloffs multiplied
+    float edgeX = smoothstep(0.0, 0.07, v_TexCoord.x) * smoothstep(1.0, 0.93, v_TexCoord.x);
+    float edgeY = smoothstep(0.0, 0.07, v_TexCoord.y) * smoothstep(1.0, 0.93, v_TexCoord.y);
+    float vignette = mix(1.0, edgeX * edgeY, u_VignetteStrength);
     color *= vignette;
 
     if (u_TrackingLost) color *= 0.6;
