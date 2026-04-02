@@ -59,7 +59,6 @@ object Constants {
     // ── Bluetooth Mode ──────────────────────────────────────────────
     const val BT_MAX_DEVICES = 15
     const val BT_NODE_RADIUS = 0.03f           // circle radius in aspect-corrected NDC
-    const val BT_RING_SPEED = 0.8f             // rings per second (expansion speed)
     const val BT_RING_WIDTH = 0.012f           // ring band half-width in NDC
     const val BT_MAX_RING_RADIUS = 0.25f       // max expansion radius in aspect-corrected NDC
     const val BT_LINE_WIDTH = 0.005f           // connection line half-width in NDC

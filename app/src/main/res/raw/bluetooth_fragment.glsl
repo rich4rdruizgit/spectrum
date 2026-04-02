@@ -14,7 +14,6 @@ uniform int   u_NodeCount;
 uniform float u_Time;
 uniform float u_AspectRatio;   // viewport width / height
 uniform float u_NodeRadius;    // node circle radius in aspect-corrected NDC
-uniform float u_RingSpeed;     // rings per second
 uniform float u_RingWidth;     // ring band half-width
 uniform float u_LineWidth;     // connection line half-width
 uniform float u_LineIntensity; // connection line max alpha
@@ -59,20 +58,24 @@ void main() {
         float dist = distance(uv, center);
 
         // ── 1. Device node (circle SDF) ──────────────────────────────
+        float nodeRadius  = u_NodeRadius * mix(0.6, 1.4, intensity);
+
         // Hard circle edge
-        float nodeSDF  = u_NodeRadius - dist;
+        float nodeSDF  = nodeRadius - dist;
         float nodeHard = smoothstep(-0.005, 0.005, nodeSDF);
 
         // Soft glow halo around the node
-        float glowRadius = u_NodeRadius * 2.5;
-        float glow       = exp(-dist / glowRadius) * 0.35 * intensity;
+        float glowRadius   = nodeRadius * 2.5;
+        float glowStrength = mix(0.15, 0.55, intensity);
+        float glow         = exp(-dist / glowRadius) * glowStrength * intensity;
 
         // Combine: solid center + glow
         vec4 nodeContrib = nodeColor * (nodeHard * intensity + glow);
 
         // ── 2. Proximity ring (expanding per-device) ─────────────────
         // Ring radius cycles 0 → u_MaxRingRadius repeatedly
-        float ringRadius  = fract(u_Time * u_RingSpeed + phase) * u_MaxRingRadius;
+        float ringSpeed   = mix(0.3, 1.4, intensity);
+        float ringRadius  = fract(u_Time * ringSpeed + phase) * u_MaxRingRadius;
         float ringDist    = abs(dist - ringRadius);
         float ring        = smoothstep(u_RingWidth, 0.0, ringDist);
 
@@ -80,23 +83,15 @@ void main() {
         float ringFade    = 1.0 - (ringRadius / u_MaxRingRadius);
         vec4  ringContrib = nodeColor * ring * ringFade * intensity * 0.55;
 
-        // ── 3. Connection line (connected devices only) ───────────────
-        vec4 lineContrib = vec4(0.0);
-        if (isConnected > 0.5) {
-            // Line from screen origin (0,0) to device node center
-            float lineDist = distToSegment(uv, vec2(0.0), center);
-            float line     = smoothstep(u_LineWidth, 0.0, lineDist);
-
-            // Fade line near center (avoids blob at origin)
-            float originDist  = distance(uv, vec2(0.0));
-            float originFade  = smoothstep(0.0, u_NodeRadius * 2.0, originDist);
-
-            // Dashed / pulsing effect along the line using distance from origin
-            float dashPhase = fract(originDist * 4.0 - u_Time * 1.5);
-            float dash      = smoothstep(0.1, 0.4, dashPhase) * smoothstep(0.9, 0.6, dashPhase);
-
-            lineContrib = nodeColor * line * originFade * dash * u_LineIntensity * intensity;
-        }
+        // ── 3. Connection line (all devices, alpha by connection state) ───────────────
+        float lineDist   = distToSegment(uv, vec2(0.0), center);
+        float line       = smoothstep(u_LineWidth, 0.0, lineDist);
+        float originDist = distance(uv, vec2(0.0));
+        float originFade = smoothstep(0.0, nodeRadius * 2.0, originDist);
+        float dashPhase  = fract(originDist * 4.0 - u_Time * 1.5);
+        float dash       = smoothstep(0.1, 0.4, dashPhase) * smoothstep(0.9, 0.6, dashPhase);
+        float lineAlpha  = isConnected > 0.5 ? u_LineIntensity : u_LineIntensity * 0.4;
+        vec4 lineContrib = nodeColor * line * originFade * dash * lineAlpha * intensity;
 
         // ── Accumulate ───────────────────────────────────────────────
         color += nodeContrib + ringContrib + lineContrib;

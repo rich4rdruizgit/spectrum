@@ -93,7 +93,7 @@ class BluetoothViewModel @Inject constructor(
         val azimuth = estimateAzimuth(node.address)
         val distance = estimateDistance(node.rssi, node.txPower)
         val strength = normalizeSignalStrength(node.rssi)
-        val color = assignColor(node.isConnected, node.type)
+        val color = assignColor(node.isConnected, node.type, strength)
 
         return BluetoothDeviceNode(
             address = node.address,
@@ -154,17 +154,21 @@ class BluetoothViewModel @Inject constructor(
             .coerceIn(0f, 1f)
     }
 
-    /**
-     * Assign node color based on connection state and device type.
-     * - Connected device → blue (BluetoothAccent)
-     * - Unknown type    → red (danger)
-     * - Detected        → gray
-     */
-    fun assignColor(isConnected: Boolean, type: BluetoothDeviceType): Long {
-        return when {
-            isConnected              -> 0xFF5B7FFFL  // BluetoothNodeConnected
-            type == BluetoothDeviceType.UNKNOWN -> 0xFFFF1744L  // BluetoothNodeUnknown (red)
-            else                     -> 0xFF9E9E9EL  // BluetoothNodeDetected (gray)
+    private fun lerp(a: Float, b: Float, t: Float): Float = a + (b - a) * t.coerceIn(0f, 1f)
+
+    private fun lerpColor(from: Long, to: Long, t: Float): Long {
+        val r = lerp(((from shr 16) and 0xFF).toFloat(), ((to shr 16) and 0xFF).toFloat(), t).toInt()
+        val g = lerp(((from shr 8) and 0xFF).toFloat(), ((to shr 8) and 0xFF).toFloat(), t).toInt()
+        val b = lerp((from and 0xFF).toFloat(), (to and 0xFF).toFloat(), t).toInt()
+        return 0xFF000000L or (r.toLong() shl 16) or (g.toLong() shl 8) or b.toLong()
+    }
+
+    fun assignColor(isConnected: Boolean, type: BluetoothDeviceType, signalStrength: Float): Long {
+        if (type == BluetoothDeviceType.UNKNOWN) return 0xFFFF1744L
+        return if (isConnected) {
+            lerpColor(0xFF1A3AFFL, 0xFF00CFFFL, signalStrength)
+        } else {
+            lerpColor(0xFF4A4A6AL, 0xFF8888BBL, signalStrength)
         }
     }
 }
