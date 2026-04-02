@@ -1,6 +1,7 @@
 package co.doubler.spectrum.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import co.doubler.spectrum.domain.model.WifiSecurityLevel
 
 // ── Core Palette ──────────────────────────────────────────────
 val NeonCyan = Color(0xFF00E5FF)
@@ -64,3 +65,17 @@ val CompeteAp7 = Color(0xFF64DD17)   // Lime   — slot 6
 val CompeteAp8 = Color(0xFF00B0FF)   // Sky    — slot 7
 val CompeteBorderColor = Color(0xFFFFFFFF)       // White pulsing border
 val CompeteLabelBackground = Color(0xCC0A0A0F)   // Semi-transparent label bg
+
+// ── WiFi Security Level Colors ────────────────────────────────
+val SecurityOpen   = Color(0xFFFF4545)  // Red    — OPEN / WEP
+val SecurityWeak   = Color(0xFFFF8C00)  // Orange — WPA + TKIP
+val SecurityGood   = Color(0xFF45FF87)  // Green  — WPA2-CCMP only
+val SecurityStrong = Color(0xFF00CEEF)  // Cyan   — WPA3
+
+fun WifiSecurityLevel.toColor(): Color = when (this) {
+    WifiSecurityLevel.OPEN,
+    WifiSecurityLevel.WEP  -> SecurityOpen
+    WifiSecurityLevel.WEAK   -> SecurityWeak
+    WifiSecurityLevel.GOOD   -> SecurityGood
+    WifiSecurityLevel.STRONG -> SecurityStrong
+}

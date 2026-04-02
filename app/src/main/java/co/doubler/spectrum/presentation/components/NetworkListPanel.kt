@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import co.doubler.spectrum.domain.model.WifiSecurityLevel
 import co.doubler.spectrum.presentation.model.GhostNetwork
 import co.doubler.spectrum.presentation.model.InterferenceGroup
 import co.doubler.spectrum.ui.theme.DataFontFamily
@@ -48,6 +49,7 @@ import co.doubler.spectrum.ui.theme.NearBlack
 import co.doubler.spectrum.ui.theme.TextPrimary
 import co.doubler.spectrum.ui.theme.TextSecondary
 import co.doubler.spectrum.ui.theme.WarningAmber
+import co.doubler.spectrum.ui.theme.toColor
 
 /**
  * Semi-transparent bottom panel that displays detected WiFi networks.
@@ -245,6 +247,11 @@ private fun NetworkRow(
                 Badge(
                     text = frequencyBandLabel(network.frequency),
                     color = TextSecondary
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Badge(
+                    text = network.securityLevel.name,
+                    color = network.securityLevel.toColor()
                 )
             }
         }

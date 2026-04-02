@@ -10,13 +10,23 @@ import javax.inject.Inject
 class FakeWifiRepository @Inject constructor() : WifiRepository {
 
     private val baseNetworks = listOf(
-        Triple("HomeNetwork_2G",    1,  2412),
-        Triple("CoffeeShop_WiFi",   6,  2437),
-        Triple("OfficeNet",         11, 2462),
-        Triple("Neighbor_5G",       36, 5180),
-        Triple("SmartTV_5GHz",      40, 5200),
-        Triple("GuestNetwork",      3,  2422),
-        Triple("IoT_Hub_5G",        149, 5745),
+        Triple("HomeNetwork_WPA3",   1,  2412),
+        Triple("CoffeeShop_Secure",  6,  2437),
+        Triple("OfficeNet_Legacy",   11, 2462),
+        Triple("Neighbor_TKIP",      36, 5180),
+        Triple("OldRouter_WEP",      40, 5200),
+        Triple("OpenHotspot",        3,  2422),
+        Triple("IoT_Hub_5G",         149, 5745),
+    )
+
+    private val capabilitiesList = listOf(
+        "[WPA3-SAE][ESS]",           // 0 → STRONG
+        "[WPA2-PSK-CCMP][ESS]",      // 1 → GOOD
+        "[WPA2-PSK-TKIP+CCMP][ESS]", // 2 → WEAK
+        "[WPA-PSK-TKIP][ESS]",       // 3 → WEAK
+        "[WEP][ESS]",                // 4 → WEP
+        "[ESS]",                     // 5 → OPEN
+        "[WPA2-PSK-CCMP][ESS]",      // 6 → GOOD
     )
 
     override fun scanNetworks(): Flow<List<WifiSignal>> = flow {
@@ -31,7 +41,7 @@ class FakeWifiRepository @Inject constructor() : WifiRepository {
                     rssi = (baseRssi + drift).coerceIn(-85, -45),
                     frequency = freq,
                     channel = channel,
-                    capabilities = if (index % 3 == 0) "[WPA-PSK-CCMP][ESS]" else "[WPA2-PSK-CCMP][ESS]",
+                    capabilities = capabilitiesList[index],
                     isUserNetwork = index == 0,
                     timestamp = System.currentTimeMillis(),
                 )
@@ -47,11 +57,11 @@ class FakeWifiRepository @Inject constructor() : WifiRepository {
             emit(
                 WifiSignal(
                     bssid = "AA:BB:CC:DD:EE:00",
-                    ssid = "HomeNetwork_2G",
+                    ssid = "HomeNetwork_WPA3",
                     rssi = -52,
                     frequency = 2412,
                     channel = 1,
-                    capabilities = "[WPA-PSK-CCMP][ESS]",
+                    capabilities = "[WPA3-SAE][ESS]",
                     isUserNetwork = true,
                     timestamp = System.currentTimeMillis(),
                 )

@@ -4,6 +4,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.doubler.spectrum.ar.ArSessionManager
+import co.doubler.spectrum.domain.model.WifiSecurity
+import co.doubler.spectrum.domain.model.WifiSecurityLevel
 import co.doubler.spectrum.domain.model.WifiSignal
 import co.doubler.spectrum.domain.repository.WifiRepository
 import co.doubler.spectrum.presentation.model.GhostNetwork
@@ -106,7 +108,8 @@ class GhostViewModel @Inject constructor(
         val azimuth = estimateAzimuth(signal.bssid)
         val distance = estimateDistance(signal.rssi)
         val strength = normalizeSignalStrength(signal.rssi)
-        val color = assignColor(isUser, strength)
+        val securityLevel = WifiSecurity.parse(signal.capabilities)
+        val color = assignColor(isUser, securityLevel)
 
         return GhostNetwork(
             bssid = signal.bssid,
@@ -118,7 +121,8 @@ class GhostViewModel @Inject constructor(
             estimatedDistance = distance,
             signalStrength = strength,
             color = color,
-            azimuthDeg = azimuth
+            azimuthDeg = azimuth,
+            securityLevel = securityLevel
         )
     }
 
@@ -166,19 +170,15 @@ class GhostViewModel @Inject constructor(
             .coerceIn(0f, 1f)
     }
 
-    /**
-     * Assign wave color based on network ownership and signal strength.
-     * User network: green (GhostWaveGreen).
-     * Neighbors: gradient from orange (weak) to red (strong).
-     */
-    fun assignColor(isUserNetwork: Boolean, signalStrength: Float): Long {
-        if (isUserNetwork) return 0xFF76FF03 // GhostWaveGreen
-
-        // Lerp from orange (0xFFFFAB00) at weak to red (0xFFFF1744) at strong
-        val r = 0xFF
-        val g = (0xAB * (1f - signalStrength)).toInt().coerceIn(0, 0xFF)
-        val b = (0x44 * (1f - signalStrength)).toInt().coerceIn(0, 0xFF)
-        return 0xFF000000L or (r.toLong() shl 16) or (g.toLong() shl 8) or b.toLong()
+    fun assignColor(isUserNetwork: Boolean, securityLevel: WifiSecurityLevel): Long {
+        if (isUserNetwork) return 0xFF76FF03L
+        return when (securityLevel) {
+            WifiSecurityLevel.OPEN,
+            WifiSecurityLevel.WEP  -> 0xFFFF4545L
+            WifiSecurityLevel.WEAK   -> 0xFFFF8C00L
+            WifiSecurityLevel.GOOD   -> 0xFF45FF87L
+            WifiSecurityLevel.STRONG -> 0xFF00CEEFL
+        }
     }
 
     // ── Interference detection ────────────────────────────────────

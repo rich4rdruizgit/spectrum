@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -55,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.doubler.spectrum.domain.model.ScanMode
+import co.doubler.spectrum.domain.model.WifiSecurityLevel
 import co.doubler.spectrum.presentation.components.ArSceneView
 import co.doubler.spectrum.presentation.components.NetworkListPanel
 import co.doubler.spectrum.presentation.model.GhostNetwork
@@ -69,6 +72,7 @@ import co.doubler.spectrum.ui.theme.NearBlack
 import co.doubler.spectrum.ui.theme.TextPrimary
 import co.doubler.spectrum.ui.theme.TextSecondary
 import co.doubler.spectrum.ui.theme.WarningAmber
+import co.doubler.spectrum.ui.theme.toColor
 import co.doubler.spectrum.util.PermissionGroups
 import co.doubler.spectrum.util.rememberPermissionState
 
@@ -218,7 +222,14 @@ private fun GhostLabel(
             tint = waveColor,
             modifier = Modifier.size(12.dp)
         )
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(3.dp))
+        Icon(
+            imageVector = lockIconFor(network.securityLevel),
+            contentDescription = null,
+            tint = network.securityLevel.toColor(),
+            modifier = Modifier.size(10.dp)
+        )
+        Spacer(modifier = Modifier.width(3.dp))
         Text(
             text = network.ssid.ifEmpty { "Hidden" },
             fontFamily = DataFontFamily,
@@ -328,6 +339,28 @@ private fun NetworkDetailSheet(
                 SheetStat(label = "DISTANCIA", value = "~${"%.1f".format(network.estimatedDistance)} m")
             }
 
+            HorizontalDivider(color = TextSecondary.copy(alpha = 0.15f))
+
+            // ── Security ──
+            SheetRow(label = "SEGURIDAD") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = lockIconFor(network.securityLevel),
+                        contentDescription = null,
+                        tint = network.securityLevel.toColor(),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = securityLabel(network.securityLevel),
+                        fontFamily = DataFontFamily,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = network.securityLevel.toColor()
+                    )
+                }
+            }
+
             // ── Interference warning ──
             if (interferenceGroup != null) {
                 HorizontalDivider(color = TextSecondary.copy(alpha = 0.15f))
@@ -413,6 +446,19 @@ private fun frequencyBandLabel(frequencyMhz: Int): String = when (frequencyMhz) 
     in 5170..5885 -> "5 GHz"
     in 5955..7115 -> "6 GHz"
     else           -> "${frequencyMhz} MHz"
+}
+
+private fun lockIconFor(level: WifiSecurityLevel) = when (level) {
+    WifiSecurityLevel.OPEN, WifiSecurityLevel.WEP -> Icons.Default.LockOpen
+    else -> Icons.Default.Lock
+}
+
+private fun securityLabel(level: WifiSecurityLevel) = when (level) {
+    WifiSecurityLevel.OPEN   -> "ABIERTA"
+    WifiSecurityLevel.WEP    -> "WEP (insegura)"
+    WifiSecurityLevel.WEAK   -> "WPA/TKIP (débil)"
+    WifiSecurityLevel.GOOD   -> "WPA2-CCMP"
+    WifiSecurityLevel.STRONG -> "WPA3"
 }
 
 // ── Collapsible Network Panel ────────────────────────────────────────
