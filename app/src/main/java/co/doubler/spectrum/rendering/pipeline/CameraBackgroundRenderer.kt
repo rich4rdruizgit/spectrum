@@ -42,6 +42,7 @@ class CameraBackgroundRenderer(private val context: Context) {
     @Volatile private var postFxTrackingLost: Boolean = false
 
     private val quadVertexBuffer: FloatBuffer = createFloatBuffer(Constants.FULLSCREEN_QUAD_COORDS)
+    private val sourceUvBuffer: FloatBuffer = createFloatBuffer(Constants.FULLSCREEN_QUAD_TEX_COORDS)
     private val transformedUvBuffer: FloatBuffer = createFloatBuffer(Constants.FULLSCREEN_QUAD_TEX_COORDS)
 
     /**
@@ -142,7 +143,8 @@ class CameraBackgroundRenderer(private val context: Context) {
     fun draw(frame: Frame) {
         // 1. Update UV coords when display geometry changes
         if (frame.hasDisplayGeometryChanged()) {
-            frame.transformDisplayUvCoords(quadVertexBuffer, transformedUvBuffer)
+            sourceUvBuffer.rewind()
+            frame.transformDisplayUvCoords(sourceUvBuffer, transformedUvBuffer)
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, texCoordVbo)
             GLES30.glBufferSubData(
                 GLES30.GL_ARRAY_BUFFER,
