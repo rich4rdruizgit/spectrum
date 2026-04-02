@@ -3,7 +3,9 @@ package co.doubler.spectrum.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.doubler.spectrum.ar.ArSessionManager
+import co.doubler.spectrum.domain.model.MagneticSignatureClassifier
 import co.doubler.spectrum.domain.repository.MagneticFieldRepository
+import co.doubler.spectrum.presentation.model.AnomalyEvent
 import co.doubler.spectrum.presentation.model.MagColorBand
 import co.doubler.spectrum.presentation.model.MagneticRenderData
 import co.doubler.spectrum.presentation.model.MagneticUiState
@@ -32,10 +34,18 @@ class MagneticViewModel @Inject constructor(
     val magneticDataRef: AtomicReference<MagneticRenderData> =
         AtomicReference(MagneticRenderData())
 
-    // Anomaly detection state
+    // ── Anomaly detection state ───────────────────────────────────────────────
+
     private val magnitudeHistory = ArrayDeque<Float>(Constants.MAG_ANOMALY_WINDOW)
     private var lastAnomalyTriggerMs = 0L
     private var readingCount = 0
+
+    // ── Anomaly event accumulation ────────────────────────────────────────────
+
+    private val classifier = MagneticSignatureClassifier()
+    private val anomalyEvents = ArrayDeque<AnomalyEvent>(MAX_EVENTS)
+    private var nextEventId = 0
+    private var wasAnomaly = false  // edge-detect: only add event on rising edge
 
     init {
         observeMagneticField()
@@ -46,33 +56,36 @@ class MagneticViewModel @Inject constructor(
             .onEach { reading ->
                 readingCount++
 
-                // Update rolling history for anomaly baseline
                 if (magnitudeHistory.size >= Constants.MAG_ANOMALY_WINDOW) {
                     magnitudeHistory.removeFirst()
                 }
                 magnitudeHistory.addLast(reading.magnitude)
 
-                // Anomaly detection — disabled during warmup
                 val isAnomaly = if (readingCount >= Constants.MAG_ANOMALY_WINDOW) {
                     detectAnomaly(reading.magnitude)
                 } else false
 
-                val mean = if (magnitudeHistory.isNotEmpty()) magnitudeHistory.average().toFloat() else 0f
+                val mean = if (magnitudeHistory.isNotEmpty())
+                    magnitudeHistory.average().toFloat() else 0f
                 val delta = abs(reading.magnitude - mean)
                 val anomalyIntensity = if (isAnomaly) {
                     (delta / (Constants.MAG_ANOMALY_THRESHOLD_UT * 3f)).coerceIn(0f, 1f)
                 } else 0f
 
+                // Rising edge: classify and record the event
+                if (isAnomaly && !wasAnomaly) {
+                    recordAnomalyEvent(reading.magnitude, reading.x, reading.y, reading.z)
+                }
+                wasAnomaly = isAnomaly
+
                 val colorBand = magnitudeToColorBand(reading.magnitude)
                 val (r, g, b) = magnitudeToColor(reading.magnitude)
 
-                // Normalized XY field direction for shader
                 val xyLen = sqrt(reading.x * reading.x + reading.y * reading.y)
                     .coerceAtLeast(0.001f)
                 val nx = reading.x / xyLen
                 val ny = reading.y / xyLen
 
-                // Update render data — lock-free, read by GL thread
                 magneticDataRef.set(
                     MagneticRenderData(
                         fieldX = nx,
@@ -95,16 +108,36 @@ class MagneticViewModel @Inject constructor(
                     anomalyIntensity = anomalyIntensity,
                     aboveIcnirpLimit = reading.magnitude > Constants.MAG_SAFE_LIMIT_UT,
                     colorBand = colorBand,
-                    isScanning = false
+                    isScanning = false,
+                    averageMagnitude = mean,
+                    isSafe = mean < Constants.MAG_SAFE_LIMIT_UT,
+                    anomalyEvents = anomalyEvents.toList()
                 )
             }
             .launchIn(viewModelScope)
     }
 
-    /**
-     * Detects anomaly using fixed-delta threshold against rolling average.
-     * Auto-clears after [Constants.MAG_ANOMALY_DECAY_MS] without a trigger.
-     */
+    // ── Anomaly event recording ───────────────────────────────────────────────
+
+    private fun recordAnomalyEvent(magnitude: Float, x: Float, y: Float, z: Float) {
+        val signature = classifier.classify(magnitudeHistory.toList(), x, y, z)
+        val pos = NODE_POSITIONS[nextEventId % NODE_POSITIONS.size]
+
+        if (anomalyEvents.size >= MAX_EVENTS) anomalyEvents.removeFirst()
+
+        anomalyEvents.addLast(
+            AnomalyEvent(
+                id = nextEventId++,
+                magnitude = magnitude,
+                signature = signature,
+                screenX = pos.first,
+                screenY = pos.second
+            )
+        )
+    }
+
+    // ── Anomaly detection ─────────────────────────────────────────────────────
+
     private fun detectAnomaly(magnitude: Float): Boolean {
         val mean = magnitudeHistory.average().toFloat()
         val delta = abs(magnitude - mean)
@@ -114,10 +147,11 @@ class MagneticViewModel @Inject constructor(
             lastAnomalyTriggerMs = now
             true
         } else {
-            // Keep anomaly active during decay window
             (now - lastAnomalyTriggerMs) < Constants.MAG_ANOMALY_DECAY_MS
         }
     }
+
+    // ── Color helpers ─────────────────────────────────────────────────────────
 
     private fun magnitudeToColorBand(magnitude: Float): MagColorBand = when {
         magnitude < Constants.MAG_LOW_THRESHOLD_UT  -> MagColorBand.LOW
@@ -125,12 +159,6 @@ class MagneticViewModel @Inject constructor(
         else                                         -> MagColorBand.HIGH
     }
 
-    /**
-     * Maps magnitude to RGB triple using the three-band gradient:
-     * LOW  (< 50 µT)   → blue  (0.08, 0.25, 0.95)
-     * MED  (50-100 µT) → purple (0.65, 0.10, 0.90)
-     * HIGH (> 100 µT)  → red   (0.95, 0.08, 0.10)
-     */
     private fun magnitudeToColor(magnitude: Float): Triple<Float, Float, Float> {
         val t = (magnitude / Constants.MAG_HIGH_THRESHOLD_UT.toFloat()).coerceIn(0f, 1f)
         return if (t < 0.5f) {
@@ -143,4 +171,20 @@ class MagneticViewModel @Inject constructor(
     }
 
     private fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
+
+    companion object {
+        private const val MAX_EVENTS = 5
+
+        /**
+         * Normalized screen positions (x, y in 0–1) for anomaly nodes.
+         * Spread across different screen quadrants to avoid overlap.
+         */
+        private val NODE_POSITIONS = listOf(
+            0.72f to 0.22f,   // top-right
+            0.22f to 0.32f,   // left
+            0.65f to 0.48f,   // center-right
+            0.38f to 0.62f,   // center-bottom
+            0.18f to 0.68f    // bottom-left
+        )
+    }
 }
