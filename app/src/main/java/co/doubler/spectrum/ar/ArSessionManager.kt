@@ -37,6 +37,17 @@ class ArSessionManager @Inject constructor() {
     private var session: Session? = null
     private var userRequestedInstall = true
 
+    /**
+     * Tracks whether the Activity lifecycle is currently in the RESUMED state.
+     *
+     * Used to handle the race condition where [checkAvailability] resolves AFTER
+     * [resume] has already been called (the common case — ARCore availability check
+     * always posts at least one 200 ms delayed re-check). In that scenario, [resume]
+     * finds [session] == null and exits early, so we need [createSession] to call
+     * [Session.resume] itself when it knows we're already in the foreground.
+     */
+    private var lifecycleResumed = false
+
     // ── Availability & Installation ─────────────────────────────────
 
     /**
@@ -109,7 +120,9 @@ class ArSessionManager @Inject constructor() {
      * Only operates when state is [ArSessionState.Ready] or [ArSessionState.Paused].
      */
     fun resume() {
-        val currentSession = session ?: return
+        lifecycleResumed = true
+
+        val currentSession = session ?: return  // session not created yet — createSession() will resume it
         val state = _sessionState.value
 
         if (state !is ArSessionState.Ready && state !is ArSessionState.Paused) {
@@ -132,6 +145,8 @@ class ArSessionManager @Inject constructor() {
      * Emits [ArSessionState.Paused].
      */
     fun pause() {
+        lifecycleResumed = false
+
         val currentSession = session ?: return
         val state = _sessionState.value
 
@@ -214,6 +229,16 @@ class ArSessionManager @Inject constructor() {
             newSession.configure(config)
 
             session = newSession
+
+            // If the Activity is already RESUMED (common — checkAvailability resolves
+            // asynchronously after at least one 200 ms postDelayed), resume the session
+            // immediately. Without this, session.update() throws SessionPausedException
+            // every frame and the camera feed never appears.
+            if (lifecycleResumed) {
+                newSession.resume()
+                Log.d(TAG, "Session created and resumed immediately (lifecycle already resumed)")
+            }
+
             _sessionState.value = ArSessionState.Ready(newSession)
             Log.d(TAG, "Session created and configured")
         } catch (e: Exception) {
