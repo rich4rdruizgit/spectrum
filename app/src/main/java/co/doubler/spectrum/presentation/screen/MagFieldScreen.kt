@@ -116,7 +116,6 @@ private fun MagneticArContent(viewModel: MagneticViewModel) {
 
                 // ── Stats bar at bottom ──
                 MagFieldStatsBar(
-                    currentMagnitude = uiState.currentMagnitude,
                     averageMagnitude = uiState.averageMagnitude,
                     isSafe = uiState.isSafe,
                     modifier = Modifier.align(Alignment.BottomCenter)
@@ -200,12 +199,11 @@ private fun AnomalyNode(
 
 @Composable
 private fun MagFieldStatsBar(
-    currentMagnitude: Float,
     averageMagnitude: Float,
     isSafe: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val icnirpPercent = (currentMagnitude / Constants.MAG_SAFE_LIMIT_UT.toFloat()).coerceIn(0f, 1f)
+    val icnirpPercent = (averageMagnitude / Constants.MAG_SAFE_LIMIT_UT.toFloat()).coerceIn(0f, 1f)
     val icnirpColor = when {
         icnirpPercent < 0.4f -> Color(0xFF44FF88)
         icnirpPercent < 0.7f -> Color(0xFFFFAA22)
@@ -249,7 +247,7 @@ private fun MagFieldStatsBar(
                 color = Color(0xAAFFFFFF)
             )
             Text(
-                text = "${(icnirpPercent * 100).toInt()}%  •  ${"%.1f".format(currentMagnitude)} µT",
+                text = "${(icnirpPercent * 100).toInt()}%  •  ${"%.1f".format(averageMagnitude)} µT",
                 fontFamily = DataFontFamily,
                 fontSize = 10.sp,
                 color = icnirpColor
