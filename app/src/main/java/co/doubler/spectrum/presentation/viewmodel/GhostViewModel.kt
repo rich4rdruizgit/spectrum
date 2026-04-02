@@ -88,6 +88,7 @@ class GhostViewModel @Inject constructor(
         val capped = ghostNetworks.take(GHOST_MAX_WAVES)
         val connectedGhost = capped.find { it.isUserNetwork }
         val interferenceGroups = detectInterference(capped)
+        val isAnomalyActive = capped.any { it.rssi > -50 }
 
         return GhostUiState(
             networks = capped,
@@ -95,7 +96,8 @@ class GhostViewModel @Inject constructor(
             interferenceGroups = interferenceGroups,
             isScanning = false,
             totalNetworkCount = scans.size,
-            screenPositions = screenPositionsRef.get()
+            screenPositions = screenPositionsRef.get(),
+            isAnomalyActive = isAnomalyActive
         )
     }
 

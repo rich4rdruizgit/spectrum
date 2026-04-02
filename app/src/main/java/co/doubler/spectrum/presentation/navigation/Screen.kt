@@ -17,3 +17,11 @@ fun ScanMode.toScreen(): Screen = when (this) {
     ScanMode.BLUETOOTH -> Screen.Bluetooth
     ScanMode.MAGNETIC -> Screen.MagField
 }
+
+fun Screen.tabIndex(): Int? = when (this) {
+    is Screen.Ghost     -> 0
+    is Screen.Compete   -> 1
+    is Screen.Bluetooth -> 2
+    is Screen.MagField  -> 3
+    is Screen.Settings  -> null
+}

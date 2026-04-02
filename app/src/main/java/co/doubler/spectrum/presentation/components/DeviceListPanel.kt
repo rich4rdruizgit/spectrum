@@ -1,5 +1,10 @@
 package co.doubler.spectrum.presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,7 +75,12 @@ fun DeviceListPanel(
 ) {
     val configuration = LocalConfiguration.current
     val maxHeight = (configuration.screenHeightDp * 0.4f).dp
+    val panelVisible = remember { MutableTransitionState(false).apply { targetState = true } }
 
+    AnimatedVisibility(
+        visibleState = panelVisible,
+        enter = slideInVertically(tween(350)) { it } + fadeIn(tween(350))
+    ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -136,11 +147,12 @@ fun DeviceListPanel(
                 // Remaining detected devices
                 val others = devices.filter { it.address !in connectedAddresses }
                 items(items = others, key = { it.address }) { device ->
-                    DeviceRow(device = device, isConnected = false)
+                    DeviceRow(device = device, isConnected = false, modifier = Modifier.animateItem())
                 }
             }
         }
     }
+    } // AnimatedVisibility
 }
 
 // ── Device Row ───────────────────────────────────────────────────────
@@ -148,7 +160,8 @@ fun DeviceListPanel(
 @Composable
 private fun DeviceRow(
     device: BluetoothDeviceNode,
-    isConnected: Boolean
+    isConnected: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val accentColor = when {
         isConnected                                -> BluetoothNodeConnected
@@ -157,7 +170,7 @@ private fun DeviceRow(
     }
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(4.dp))
             .background(

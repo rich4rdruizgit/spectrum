@@ -1,5 +1,10 @@
 package co.doubler.spectrum.presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +29,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,12 +71,17 @@ fun NetworkListPanel(
 ) {
     val configuration = LocalConfiguration.current
     val maxHeight = (configuration.screenHeightDp * 0.4f).dp
+    val panelVisible = remember { MutableTransitionState(false).apply { targetState = true } }
 
     // Pre-compute which BSSIDs have interference for O(1) lookup
     val interferingBssids = interferenceGroups
         .flatMap { group -> group.networks.map { it.bssid } }
         .toSet()
 
+    AnimatedVisibility(
+        visibleState = panelVisible,
+        enter = slideInVertically(tween(350)) { it } + fadeIn(tween(350))
+    ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -152,12 +163,14 @@ fun NetworkListPanel(
                     NetworkRow(
                         network = network,
                         hasInterference = network.bssid in interferingBssids,
-                        isConnected = false
+                        isConnected = false,
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
         }
     }
+    } // AnimatedVisibility
 }
 
 // ── Network Row ─────────────────────────────────────────────────────
@@ -166,12 +179,13 @@ fun NetworkListPanel(
 private fun NetworkRow(
     network: GhostNetwork,
     hasInterference: Boolean,
-    isConnected: Boolean
+    isConnected: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val accentColor = if (isConnected) GhostWaveGreen else TextPrimary
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(4.dp))
             .background(

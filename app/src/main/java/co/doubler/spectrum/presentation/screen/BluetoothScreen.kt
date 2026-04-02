@@ -109,6 +109,7 @@ private fun BluetoothArContent(
             scanMode = ScanMode.BLUETOOTH,
             isScanning = uiState.isScanning,
             overlayRenderer = bluetoothRenderer,
+            isAnomalyActive = uiState.isAnomalyActive,
             hudContent = {
                 // ── AR Labels — positioned by GL→Compose screen projections ──
                 uiState.screenPositions.forEach { (address, position) ->

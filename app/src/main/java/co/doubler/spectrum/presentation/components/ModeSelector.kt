@@ -1,5 +1,8 @@
 package co.doubler.spectrum.presentation.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
@@ -12,8 +15,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import co.doubler.spectrum.domain.model.ScanMode
@@ -51,6 +56,11 @@ fun ModeSelector(
     ) {
         modeTabs.forEach { tab ->
             val selected = tab.mode == currentMode
+            val iconScale by animateFloatAsState(
+                targetValue = if (selected) 1.2f else 1.0f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                label = "icon_scale_${tab.mode.name}"
+            )
             NavigationBarItem(
                 selected = selected,
                 onClick = { onModeSelected(tab.mode) },
@@ -58,7 +68,9 @@ fun ModeSelector(
                     Icon(
                         imageVector = tab.icon,
                         contentDescription = tab.label,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier
+                            .size(24.dp)
+                            .graphicsLayer(scaleX = iconScale, scaleY = iconScale)
                     )
                 },
                 label = { Text(text = tab.label) },

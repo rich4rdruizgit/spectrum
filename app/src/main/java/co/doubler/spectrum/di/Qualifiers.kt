@@ -17,3 +17,11 @@ annotation class MainDispatcher
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class SensorScope
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class RealImpl
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class DemoImpl

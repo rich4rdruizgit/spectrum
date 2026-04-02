@@ -6,6 +6,9 @@ import android.content.Context
 import android.hardware.SensorManager
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
+import co.doubler.spectrum.data.fake.DemoAwareBleRepository
+import co.doubler.spectrum.data.fake.DemoAwareMagneticRepository
+import co.doubler.spectrum.data.fake.DemoAwareWifiRepository
 import co.doubler.spectrum.data.repository.BluetoothRepositoryImpl
 import co.doubler.spectrum.data.repository.MagneticFieldRepositoryImpl
 import co.doubler.spectrum.data.repository.WifiRepositoryImpl
@@ -51,15 +54,30 @@ abstract class SensorModule {
 
     @Binds
     @Singleton
+    @RealImpl
     abstract fun bindWifiRepository(impl: WifiRepositoryImpl): WifiRepository
 
     @Binds
     @Singleton
+    abstract fun bindDemoAwareWifiRepository(impl: DemoAwareWifiRepository): WifiRepository
+
+    @Binds
+    @Singleton
+    @RealImpl
     abstract fun bindBluetoothRepository(impl: BluetoothRepositoryImpl): BluetoothRepository
 
     @Binds
     @Singleton
+    abstract fun bindDemoAwareBleRepository(impl: DemoAwareBleRepository): BluetoothRepository
+
+    @Binds
+    @Singleton
+    @RealImpl
     abstract fun bindMagneticFieldRepository(impl: MagneticFieldRepositoryImpl): MagneticFieldRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDemoAwareMagneticRepository(impl: DemoAwareMagneticRepository): MagneticFieldRepository
 
     companion object {
 

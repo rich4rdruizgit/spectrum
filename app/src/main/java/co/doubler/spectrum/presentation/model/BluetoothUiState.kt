@@ -8,7 +8,8 @@ data class BluetoothUiState(
     val connectedDevices: List<BluetoothDeviceNode> = emptyList(),
     val isScanning: Boolean = false,
     val totalDeviceCount: Int = 0,
-    val screenPositions: Map<String, Offset> = emptyMap()
+    val screenPositions: Map<String, Offset> = emptyMap(),
+    val isAnomalyActive: Boolean = false
 )
 
 /**

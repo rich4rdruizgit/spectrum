@@ -97,6 +97,7 @@ private fun CompeteArContent(
             scanMode = ScanMode.COMPETE,
             isScanning = uiState.isScanning,
             overlayRenderer = competeRenderer,
+            isAnomalyActive = uiState.isAnomalyActive,
             hudContent = {
                 // ── Coverage scoreboard at the TOP of the screen ──────────
                 CoverageScoreboard(

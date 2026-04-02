@@ -8,7 +8,8 @@ data class GhostUiState(
     val interferenceGroups: List<InterferenceGroup> = emptyList(),
     val isScanning: Boolean = false,
     val totalNetworkCount: Int = 0,
-    val screenPositions: Map<String, Offset> = emptyMap()
+    val screenPositions: Map<String, Offset> = emptyMap(),
+    val isAnomalyActive: Boolean = false
 )
 
 data class GhostNetwork(

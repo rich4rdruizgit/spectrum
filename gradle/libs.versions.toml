@@ -25,6 +25,7 @@ lifecycleViewmodelCompose = "2.10.0"
 
 # Persistence
 room = "2.7.1"
+datastore = "1.1.1"
 
 # AR
 arcore = "1.48.0"
@@ -70,6 +71,9 @@ arcore = { group = "com.google.ar", name = "core", version.ref = "arcore" }
 # Room
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+# DataStore
+datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
 # Serialization
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
