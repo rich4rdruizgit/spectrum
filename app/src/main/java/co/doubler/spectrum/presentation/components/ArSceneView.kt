@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -109,6 +110,17 @@ fun ArSceneView(
             isAnomalyActive = isAnomalyActive,
             content = hudContent,
         )
+    }
+
+    // ── Session Ready → pipeline init (async path) ───────────────
+    // checkAvailability() in MainActivity may resolve AFTER onSurfaceCreated runs.
+    // When that happens, onSurfaceCreated sees a non-Ready state and skips pipeline
+    // init. This effect covers that gap: whenever sessionState transitions to Ready
+    // and the GL surface already exists, we notify the renderer on the GL thread.
+    LaunchedEffect(sessionState, glSurfaceView) {
+        val readyState = sessionState as? ArSessionState.Ready ?: return@LaunchedEffect
+        val view = glSurfaceView ?: return@LaunchedEffect
+        view.queueEvent { renderer.onSessionReady(readyState) }
     }
 
     // ── Lifecycle observer: pause/resume GL + session ─────────────

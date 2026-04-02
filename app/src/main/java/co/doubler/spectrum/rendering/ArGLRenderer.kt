@@ -43,6 +43,7 @@ class ArGLRenderer(
     private var renderPipeline: RenderPipeline? = null
     private var viewportWidth: Int = 0
     private var viewportHeight: Int = 0
+    private var pipelineInitialized: Boolean = false
 
     // ── GLSurfaceView.Renderer ─────────────────────────────────────
 
@@ -65,9 +66,11 @@ class ArGLRenderer(
 
         // If session is already Ready, initialize the pipeline immediately.
         // This handles both fresh start and GL context recreation scenarios.
+        pipelineInitialized = false
         val state = sessionManager.sessionState.value
         if (state is ArSessionState.Ready) {
             renderPipeline?.onSurfaceCreated(state.session, viewportWidth, viewportHeight)
+            pipelineInitialized = true
             Log.d(TAG, "Pipeline initialized with existing session on surface creation")
         } else {
             Log.d(TAG, "Surface created, session not yet Ready (state: $state) — deferring pipeline init")
@@ -147,7 +150,12 @@ class ArGLRenderer(
      * has already run (e.g., delayed ARCore availability check).
      */
     fun onSessionReady(state: ArSessionState.Ready) {
+        if (pipelineInitialized) {
+            Log.d(TAG, "onSessionReady: pipeline already initialized — skipping")
+            return
+        }
         renderPipeline?.onSurfaceCreated(state.session, viewportWidth, viewportHeight)
+        pipelineInitialized = true
         Log.d(TAG, "Pipeline initialized after session became Ready")
     }
 
