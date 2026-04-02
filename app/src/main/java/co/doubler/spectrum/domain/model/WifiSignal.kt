@@ -8,5 +8,8 @@ data class WifiSignal(
     val channel: Int,
     val capabilities: String, // e.g. "[WPA2-PSK-CCMP][ESS]"
     val isUserNetwork: Boolean,
-    val timestamp: Long     // epoch millis
+    val timestamp: Long,    // epoch millis
+    val wifiStandard: String = "Desconocido",
+    val wpsEnabled: Boolean = false,
+    val channelWidth: String = "Desconocido"
 )

@@ -19,6 +19,13 @@ class FakeWifiRepository @Inject constructor() : WifiRepository {
         Triple("IoT_Hub_5G",         149, 5745),
     )
 
+    private val wifiStandardList = listOf(
+        "WiFi 6 (802.11ax)", "WiFi 5 (802.11ac)", "WiFi 4 (802.11n)",
+        "WiFi Legacy", "WiFi 5 (802.11ac)", "WiFi 6 (802.11ax)", "WiFi 4 (802.11n)"
+    )
+    private val wpsEnabledList = listOf(false, true, true, true, false, false, false)
+    private val channelWidthList = listOf("80 MHz", "40 MHz", "20 MHz", "20 MHz", "80 MHz", "160 MHz", "40 MHz")
+
     private val capabilitiesList = listOf(
         "[WPA3-SAE][ESS]",           // 0 → STRONG
         "[WPA2-PSK-CCMP][ESS]",      // 1 → GOOD
@@ -44,6 +51,9 @@ class FakeWifiRepository @Inject constructor() : WifiRepository {
                     capabilities = capabilitiesList[index],
                     isUserNetwork = index == 0,
                     timestamp = System.currentTimeMillis(),
+                    wifiStandard = wifiStandardList[index % wifiStandardList.size],
+                    wpsEnabled = wpsEnabledList[index % wpsEnabledList.size],
+                    channelWidth = channelWidthList[index % channelWidthList.size],
                 )
             }
             emit(networks)

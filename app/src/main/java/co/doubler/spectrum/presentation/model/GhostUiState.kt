@@ -24,7 +24,10 @@ data class GhostNetwork(
     val signalStrength: Float,     // 0.0-1.0 normalized
     val color: Long,               // ARGB for wave rendering
     val azimuthDeg: Float,         // 0-360, from BSSID hash
-    val securityLevel: WifiSecurityLevel
+    val securityLevel: WifiSecurityLevel,
+    val wifiStandard: String,
+    val wpsEnabled: Boolean,
+    val channelWidth: String,
 )
 
 data class InterferenceGroup(

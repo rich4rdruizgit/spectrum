@@ -122,7 +122,10 @@ class GhostViewModel @Inject constructor(
             signalStrength = strength,
             color = color,
             azimuthDeg = azimuth,
-            securityLevel = securityLevel
+            securityLevel = securityLevel,
+            wifiStandard = signal.wifiStandard,
+            wpsEnabled = signal.wpsEnabled,
+            channelWidth = signal.channelWidth,
         )
     }
 
