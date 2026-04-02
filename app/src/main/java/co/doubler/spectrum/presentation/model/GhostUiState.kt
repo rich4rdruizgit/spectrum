@@ -1,6 +1,7 @@
 package co.doubler.spectrum.presentation.model
 
 import androidx.compose.ui.geometry.Offset
+import co.doubler.spectrum.domain.model.WifiSecurityLevel
 
 data class GhostUiState(
     val networks: List<GhostNetwork> = emptyList(),
@@ -22,7 +23,8 @@ data class GhostNetwork(
     val estimatedDistance: Float,   // meters (path-loss model)
     val signalStrength: Float,     // 0.0-1.0 normalized
     val color: Long,               // ARGB for wave rendering
-    val azimuthDeg: Float          // 0-360, from BSSID hash
+    val azimuthDeg: Float,         // 0-360, from BSSID hash
+    val securityLevel: WifiSecurityLevel
 )
 
 data class InterferenceGroup(
