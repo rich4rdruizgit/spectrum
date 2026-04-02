@@ -102,9 +102,10 @@ class ArGLRenderer(
     /**
      * Called every frame to render the AR scene.
      *
-     * Skips rendering when:
-     * - Session is not in Ready state ([ArSessionManager.update] returns null)
-     * - Camera is not in [TrackingState.TRACKING] state
+     * Camera background is drawn on every frame so the live feed is visible
+     * even while ARCore is initializing (TrackingState.PAUSED / STOPPED).
+     * Overlay renderers are skipped until [TrackingState.TRACKING] because
+     * they require a valid camera pose for their projection/view matrices.
      */
     override fun onDrawFrame(gl: GL10?) {
         GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT or GLES30.GL_DEPTH_BUFFER_BIT)
@@ -115,12 +116,12 @@ class ArGLRenderer(
         val frame = sessionManager.update() ?: return
         val camera = frame.camera
 
-        // Only render when camera is tracking — PAUSED or STOPPED means
-        // ARCore doesn't have a reliable pose estimate yet
-        if (camera.trackingState != TrackingState.TRACKING) return
+        // Always draw camera background — visible even before tracking locks in
+        pipeline.renderCameraBackground(frame)
 
-        // Render: camera background → overlay renderers
-        pipeline.render(frame, camera)
+        // Overlays need a valid pose — skip until TRACKING
+        if (camera.trackingState != TrackingState.TRACKING) return
+        pipeline.renderOverlays(frame, camera)
     }
 
     // ── Public API ─────────────────────────────────────────────────
@@ -148,15 +149,32 @@ class ArGLRenderer(
      * Must be called on the GL thread (via [GLSurfaceView.queueEvent]).
      * Handles the case where the session becomes Ready AFTER onSurfaceCreated
      * has already run (e.g., delayed ARCore availability check).
+     *
+     * Also sets display geometry here because [onSurfaceChanged] only calls
+     * [com.google.ar.core.Session.setDisplayGeometry] when the session is already
+     * Ready at that point — if the session is created later, geometry is never set
+     * and ARCore returns frames with incorrect UV transforms.
      */
     fun onSessionReady(state: ArSessionState.Ready) {
         if (pipelineInitialized) {
             Log.d(TAG, "onSessionReady: pipeline already initialized — skipping")
             return
         }
-        renderPipeline?.onSurfaceCreated(state.session, viewportWidth, viewportHeight)
-        pipelineInitialized = true
-        Log.d(TAG, "Pipeline initialized after session became Ready")
+        try {
+            renderPipeline?.onSurfaceCreated(state.session, viewportWidth, viewportHeight)
+
+            // Set display geometry now that we have both session + viewport dimensions.
+            // ARCore docs: "Failure to call this before update() will cause rendering issues."
+            if (viewportWidth > 0 && viewportHeight > 0) {
+                state.session.setDisplayGeometry(getDisplayRotation(), viewportWidth, viewportHeight)
+            }
+
+            pipelineInitialized = true
+            Log.d(TAG, "Pipeline initialized after session became Ready (${viewportWidth}x${viewportHeight})")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize pipeline in onSessionReady", e)
+            // Leave pipelineInitialized = false so the next onSessionReady attempt can retry
+        }
     }
 
     // ── Private ────────────────────────────────────────────────────

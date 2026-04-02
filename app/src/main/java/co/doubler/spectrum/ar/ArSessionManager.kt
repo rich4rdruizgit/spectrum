@@ -234,13 +234,23 @@ class ArSessionManager @Inject constructor() {
             // asynchronously after at least one 200 ms postDelayed), resume the session
             // immediately. Without this, session.update() throws SessionPausedException
             // every frame and the camera feed never appears.
-            if (lifecycleResumed) {
-                newSession.resume()
-                Log.d(TAG, "Session created and resumed immediately (lifecycle already resumed)")
-            }
-
+            // Session created successfully — mark it Ready before attempting resume
+            // so the UI can react even if resume fails.
             _sessionState.value = ArSessionState.Ready(newSession)
             Log.d(TAG, "Session created and configured")
+
+            // If the Activity is already RESUMED, resume the session now.
+            // This is in a SEPARATE try-catch: a CameraNotAvailableException here
+            // must NOT roll back the session to Error — the session is valid and
+            // will be resumed on the next ON_RESUME event.
+            if (lifecycleResumed) {
+                try {
+                    newSession.resume()
+                    Log.d(TAG, "Session resumed immediately (lifecycle was already resumed)")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not resume session immediately after creation — will retry on next ON_RESUME: ${e.message}")
+                }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create ARCore session", e)
             _sessionState.value = ArSessionState.Error(e)

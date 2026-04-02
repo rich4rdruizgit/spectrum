@@ -60,32 +60,50 @@ class RenderPipeline(
     }
 
     /**
-     * Render one complete frame.
+     * Draw only the camera background for the current frame.
      *
-     * 1. [CameraBackgroundRenderer] draws camera feed (depth test disabled)
-     * 2. Extract projection and view matrices from [Camera]
-     * 3. Each [OverlayRenderer] draws its visualization with the matrices
+     * Call this every frame regardless of tracking state — the camera
+     * feed should be visible even when ARCore is initializing or lost.
+     */
+    fun renderCameraBackground(frame: Frame) {
+        cameraBackgroundRenderer.draw(frame)
+    }
+
+    /**
+     * Draw all registered overlay renderers for the current frame.
+     *
+     * Only call this when [com.google.ar.core.TrackingState.TRACKING] —
+     * overlays need a valid camera pose to produce correct projection/view matrices.
+     *
+     * @param frame The current ARCore frame
+     * @param camera The camera from the current frame (must be TRACKING)
+     */
+    fun renderOverlays(frame: Frame, camera: Camera) {
+        if (overlays.isEmpty()) return
+
+        val projectionMatrix = FloatArray(16)
+        camera.getProjectionMatrix(projectionMatrix, 0, 0.1f, 100f)
+
+        val viewMatrix = FloatArray(16)
+        camera.getViewMatrix(viewMatrix, 0)
+
+        for (overlay in overlays) {
+            overlay.onDrawFrame(frame, projectionMatrix, viewMatrix)
+        }
+    }
+
+    /**
+     * Render one complete frame: camera background + overlays.
+     *
+     * Convenience wrapper — prefer calling [renderCameraBackground] and
+     * [renderOverlays] separately when you need tracking-state gating.
      *
      * @param frame The current ARCore frame
      * @param camera The camera from the current frame
      */
     fun render(frame: Frame, camera: Camera) {
-        // 1. Camera background — ALWAYS first
-        cameraBackgroundRenderer.draw(frame)
-
-        // 2. Extract matrices for overlays
-        if (overlays.isNotEmpty()) {
-            val projectionMatrix = FloatArray(16)
-            camera.getProjectionMatrix(projectionMatrix, 0, 0.1f, 100f)
-
-            val viewMatrix = FloatArray(16)
-            camera.getViewMatrix(viewMatrix, 0)
-
-            // 3. Draw each overlay in registration order
-            for (overlay in overlays) {
-                overlay.onDrawFrame(frame, projectionMatrix, viewMatrix)
-            }
-        }
+        renderCameraBackground(frame)
+        renderOverlays(frame, camera)
     }
 
     /**
