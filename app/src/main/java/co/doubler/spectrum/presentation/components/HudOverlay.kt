@@ -1,11 +1,11 @@
 package co.doubler.spectrum.presentation.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateColor
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -19,6 +19,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -50,6 +52,8 @@ fun HudOverlay(
     scanMode: ScanMode,
     isScanning: Boolean,
     isAnomalyActive: Boolean = false,
+    subtitle: String? = null,
+    iconEmoji: String? = null,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
@@ -77,6 +81,8 @@ fun HudOverlay(
                 scanMode = scanMode,
                 isScanning = isScanning,
                 isAnomalyActive = isAnomalyActive,
+                subtitle = subtitle,
+                iconEmoji = iconEmoji,
                 modifier = Modifier.align(Alignment.TopCenter)
             )
         }
@@ -125,6 +131,8 @@ private fun StatusBar(
     scanMode: ScanMode,
     isScanning: Boolean,
     isAnomalyActive: Boolean = false,
+    subtitle: String? = null,
+    iconEmoji: String? = null,
     modifier: Modifier = Modifier
 ) {
     val hudStyling = LocalHudStyling.current
@@ -146,32 +154,68 @@ private fun StatusBar(
         modeColor
     }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(NearBlack.copy(alpha = hudStyling.backgroundAlpha))
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = scanMode.displayName.uppercase(),
-            color = modeTextColor,
-            fontSize = hudStyling.textSize
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        if (isScanning) {
-            ScanningIndicator(
-                color = modeTextColor,
-                pulseDurationMs = if (isAnomalyActive) 400 else 800
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+    if (subtitle != null) {
+        // Two-row layout: icon + mode name / scanning dot on row 1, subtitle on row 2
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(NearBlack.copy(alpha = hudStyling.backgroundAlpha))
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (iconEmoji != null) {
+                    Text(text = iconEmoji, fontSize = hudStyling.textSize)
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text(
+                    text = scanMode.displayName.uppercase(),
+                    color = modeTextColor,
+                    fontSize = hudStyling.textSize,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                if (isScanning) {
+                    ScanningIndicator(
+                        color = modeTextColor,
+                        pulseDurationMs = if (isAnomalyActive) 400 else 800
+                    )
+                }
+            }
+            val fullSubtitle = if (isScanning) "$subtitle • ESCANEANDO..." else subtitle
             Text(
-                text = "SCANNING",
-                color = HudTextGlow,
+                text = fullSubtitle,
+                color = HudTextGlow.copy(alpha = 0.7f),
                 fontSize = hudStyling.textSize
             )
+        }
+    } else {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(NearBlack.copy(alpha = hudStyling.backgroundAlpha))
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = scanMode.displayName.uppercase(),
+                color = modeTextColor,
+                fontSize = hudStyling.textSize
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            if (isScanning) {
+                ScanningIndicator(
+                    color = modeTextColor,
+                    pulseDurationMs = if (isAnomalyActive) 400 else 800
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "SCANNING",
+                    color = HudTextGlow,
+                    fontSize = hudStyling.textSize
+                )
+            }
         }
     }
 }

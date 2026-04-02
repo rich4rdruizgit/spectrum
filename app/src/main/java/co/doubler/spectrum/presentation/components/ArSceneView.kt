@@ -67,6 +67,8 @@ fun ArSceneView(
     isScanning: Boolean,
     overlayRenderer: OverlayRenderer? = null,
     isAnomalyActive: Boolean = false,
+    subtitle: String? = null,
+    iconEmoji: String? = null,
     modifier: Modifier = Modifier,
     hudContent: @Composable BoxScope.() -> Unit = {},
 ) {
@@ -108,6 +110,8 @@ fun ArSceneView(
             scanMode = scanMode,
             isScanning = isScanning,
             isAnomalyActive = isAnomalyActive,
+            subtitle = subtitle,
+            iconEmoji = iconEmoji,
             content = hudContent,
         )
     }
