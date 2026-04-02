@@ -52,3 +52,15 @@ val BluetoothNodeConnected = Color(0xFF5B7FFF)     // Connected device — accen
 val BluetoothNodeDetected  = Color(0xFF9E9E9E)     // Detected but not connected — gray
 val BluetoothNodeUnknown   = Color(0xFFFF1744)     // Unknown type device — red
 val BluetoothLabelBackground = Color(0xCC0A0A1F)   // Semi-transparent label bg (blue-tinted)
+
+// ── Compete Territory Colors (8-slot AP palette) ─────────────
+val CompeteAp1 = Color(0xFF00FF88)   // Green  — slot 0
+val CompeteAp2 = Color(0xFF00E5FF)   // Cyan   — slot 1
+val CompeteAp3 = Color(0xFFFFD600)   // Amber  — slot 2
+val CompeteAp4 = Color(0xFFFF6D00)   // Orange — slot 3
+val CompeteAp5 = Color(0xFFE040FB)   // Purple — slot 4
+val CompeteAp6 = Color(0xFFFF1744)   // Red    — slot 5
+val CompeteAp7 = Color(0xFF64DD17)   // Lime   — slot 6
+val CompeteAp8 = Color(0xFF00B0FF)   // Sky    — slot 7
+val CompeteBorderColor = Color(0xFFFFFFFF)       // White pulsing border
+val CompeteLabelBackground = Color(0xCC0A0A0F)   // Semi-transparent label bg

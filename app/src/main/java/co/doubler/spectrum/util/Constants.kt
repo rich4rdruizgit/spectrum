@@ -61,6 +61,16 @@ object Constants {
     const val BT_DISTANCE_MIN_M = 0.3f         // closest device placement
     const val BT_DISTANCE_MAX_M = 8.0f         // farthest device placement
 
+    // ── Compete Mode ────────────────────────────────────────────────
+    const val COMPETE_MAX_APS = 8
+    const val COMPETE_TOP_APS = 4                 // default APs shown in compete mode
+    const val COMPETE_BORDER_THRESHOLD = 0.08f    // NDC distance delta for border zone
+    const val COMPETE_TERRITORY_ALPHA = 0.25f     // territory fill transparency
+    const val COMPETE_BORDER_PULSE_SPEED = 3.0f   // sin frequency for border animation
+    const val COMPETE_AP_RSSI_MIN = -85           // weakest AP to include
+    const val COMPETE_AP_RSSI_MAX = -40           // strongest expected AP signal
+    const val COMPETE_COVERAGE_HISTORY = 30       // frames tracked for coverage % computation
+
     /** Fullscreen quad vertex coords (triangle strip): BL, BR, TL, TR */
     val FULLSCREEN_QUAD_COORDS = floatArrayOf(
         -1.0f, -1.0f, // bottom-left
