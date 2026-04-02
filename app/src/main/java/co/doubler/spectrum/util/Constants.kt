@@ -35,6 +35,19 @@ object Constants {
     const val COORDS_PER_VERTEX = 2 // x, y (NDC quad, no z needed)
     const val TEX_COORDS_PER_VERTEX = 2
 
+    // ── Ghost Mode ─────────────────────────────────────────────
+    const val GHOST_MAX_WAVES = 20
+    const val GHOST_WAVE_FREQUENCY = 15.0f
+    const val GHOST_WAVE_SPEED = 2.0f
+    const val GHOST_WAVE_THICKNESS = 0.3f
+    const val GHOST_MAX_RADIUS = 0.8f
+    const val GHOST_BASE_ALPHA = 0.4f
+    const val GHOST_FALLOFF_RATE = 3.0f
+    const val GHOST_RSSI_MIN = -90
+    const val GHOST_RSSI_MAX = -30
+    const val GHOST_DISTANCE_MIN_M = 0.5f
+    const val GHOST_DISTANCE_MAX_M = 5.0f
+
     /** Fullscreen quad vertex coords (triangle strip): BL, BR, TL, TR */
     val FULLSCREEN_QUAD_COORDS = floatArrayOf(
         -1.0f, -1.0f, // bottom-left

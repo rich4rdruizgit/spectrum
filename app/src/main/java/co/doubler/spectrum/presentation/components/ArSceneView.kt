@@ -22,6 +22,7 @@ import co.doubler.spectrum.ar.ArSessionState
 import co.doubler.spectrum.domain.model.ScanMode
 import co.doubler.spectrum.rendering.ArGLRenderer
 import co.doubler.spectrum.rendering.GLArSurfaceView
+import co.doubler.spectrum.rendering.pipeline.OverlayRenderer
 
 /**
  * Compose wrapper that hosts the AR GL surface and layers the HUD on top.
@@ -51,6 +52,10 @@ import co.doubler.spectrum.rendering.GLArSurfaceView
  * @param sessionManager The ARCore session lifecycle manager (Activity-scoped via Hilt).
  * @param scanMode The currently active scan mode — passed to [HudOverlay].
  * @param isScanning Whether the scanner is actively collecting data.
+ * @param overlayRenderer Optional mode-specific GL overlay renderer. When provided, it is
+ *   registered on the [co.doubler.spectrum.rendering.pipeline.RenderPipeline] via
+ *   [GLSurfaceView.queueEvent] to ensure GL-thread safety. Automatically unregistered
+ *   when the composable leaves composition or the renderer instance changes.
  * @param modifier Modifier applied to the root [Box].
  * @param hudContent Additional mode-specific content rendered inside [HudOverlay].
  */
@@ -59,6 +64,7 @@ fun ArSceneView(
     sessionManager: ArSessionManager,
     scanMode: ScanMode,
     isScanning: Boolean,
+    overlayRenderer: OverlayRenderer? = null,
     modifier: Modifier = Modifier,
     hudContent: @Composable BoxScope.() -> Unit = {},
 ) {
@@ -128,6 +134,25 @@ fun ArSceneView(
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // ── Overlay renderer registration (GL thread) ────────────────
+    // Keyed on both overlayRenderer and glSurfaceView so it re-runs when:
+    // - The mode changes (new renderer instance) → old overlay removed, new one added
+    // - The GL surface is recreated → overlay re-registered on the new pipeline
+    DisposableEffect(overlayRenderer, glSurfaceView) {
+        val overlay = overlayRenderer ?: return@DisposableEffect onDispose {}
+        val view = glSurfaceView ?: return@DisposableEffect onDispose {}
+
+        view.queueEvent {
+            renderer.getRenderPipeline()?.addOverlay(overlay)
+        }
+
+        onDispose {
+            view.queueEvent {
+                renderer.getRenderPipeline()?.removeOverlay(overlay)
+            }
         }
     }
 }

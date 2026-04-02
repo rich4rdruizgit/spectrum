@@ -39,3 +39,10 @@ val HudBracketColor = Color(0xFF00E5FF)     // Targeting bracket outlines
 val HudScanningPulse = Color(0x8000E5FF)    // Semi-transparent pulse animation
 val HudGridLines = Color(0x331A1A2E)        // Subtle grid overlay
 val HudTextGlow = Color(0xFF76FF03)         // Glowing data readout text
+
+// ── Ghost Wave Colors ───────────────────────────────────────
+val GhostWaveGreen = Color(0xFF76FF03)         // User's network wave
+val GhostWaveRed = Color(0xFFFF1744)           // Strong neighbor wave
+val GhostWaveOrange = Color(0xFFFFAB00)        // Weak neighbor wave
+val GhostInterferenceTint = Color(0x40FF6D00)  // Interference overlay tint
+val GhostLabelBackground = Color(0xCC0A0A0F)   // Semi-transparent label bg
