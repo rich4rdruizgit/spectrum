@@ -1,7 +1,11 @@
 package co.doubler.spectrum.presentation.screen
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -11,25 +15,33 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.Watch
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -186,12 +198,14 @@ private fun BluetoothArContent(viewModel: BluetoothViewModel) {
                     }
                 }
 
-                // ── Stats bar at bottom ──
-                BtStatsBar(
-                    total = uiState.totalDeviceCount,
-                    connected = uiState.connectedDevices.size,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
+                // ── Device list + stats bar at bottom ──
+                Column(modifier = Modifier.align(Alignment.BottomCenter)) {
+                    BtDevicePanel(devices = uiState.devices)
+                    BtStatsBar(
+                        total = uiState.totalDeviceCount,
+                        connected = uiState.connectedDevices.size
+                    )
+                }
             }
         )
 
@@ -272,18 +286,148 @@ private fun ConstellationNode(
     }
 }
 
+// ── Device Panel (collapsible) ───────────────────────────────────────
+
+@Composable
+private fun BtDevicePanel(
+    devices: List<BluetoothDeviceNode>,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(NearBlack.copy(alpha = 0.88f))
+    ) {
+        // Handle row — always visible
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("🛸", fontSize = 12.sp)
+                Text(
+                    text = "DISPOSITIVOS CERCANOS",
+                    fontFamily = DataFontFamily,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BluetoothAccent,
+                    letterSpacing = 0.5.sp
+                )
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${devices.size} disp.",
+                    fontFamily = DataFontFamily,
+                    fontSize = 10.sp,
+                    color = TextSecondary
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowDown
+                                  else          Icons.Default.KeyboardArrowUp,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+
+        // Expandable list
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp)) {
+                items(devices, key = { it.address }) { device ->
+                    BtDeviceRow(device = device)
+                    HorizontalDivider(color = Color(0x1AFFFFFF), thickness = 0.5.dp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BtDeviceRow(device: BluetoothDeviceNode) {
+    val color = nodeColor(device)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            imageVector = deviceIcon(device.type),
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(15.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = device.name,
+                fontFamily = DataFontFamily,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = color,
+                maxLines = 1
+            )
+            Text(
+                text = device.type.name.lowercase()
+                    .replaceFirstChar { it.uppercase() },
+                fontFamily = DataFontFamily,
+                fontSize = 9.sp,
+                color = TextSecondary
+            )
+        }
+        if (device.isConnected) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(BluetoothNodeConnected)
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "${device.rssi} dBm",
+                fontFamily = DataFontFamily,
+                fontSize = 10.sp,
+                color = color
+            )
+            Text(
+                text = "${"%.1f".format(device.estimatedDistance)} m",
+                fontFamily = DataFontFamily,
+                fontSize = 9.sp,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
 // ── Stats Bar ────────────────────────────────────────────────────────
 
 @Composable
 private fun BtStatsBar(
     total: Int,
-    connected: Int,
-    modifier: Modifier = Modifier
+    connected: Int
 ) {
     val available = (total - connected).coerceAtLeast(0)
 
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .background(NearBlack.copy(alpha = 0.85f))
             .padding(horizontal = 16.dp, vertical = 10.dp),
