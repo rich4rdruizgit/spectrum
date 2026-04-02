@@ -124,20 +124,25 @@ fun ArSceneView(
     }
 
     // ── Lifecycle observer: pause/resume GL + session ─────────────
-    DisposableEffect(lifecycleOwner, glSurfaceView) {
+    // NOTE: Keyed on lifecycleOwner only (NOT glSurfaceView).
+    // sessionManager.resume/pause must NOT be gated on glSurfaceView: on first
+    // launch, ON_RESUME fires while glSurfaceView is still null (Compose hasn't
+    // composed yet), so gating on the view causes the session to never resume →
+    // session.update() throws SessionPausedException → black camera background.
+    // GLSurfaceView starts its render thread in setRenderer() without needing
+    // an explicit onResume(), so null-safety on view ops is safe here.
+    DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            val view = glSurfaceView ?: return@LifecycleEventObserver
-
             when (event) {
                 Lifecycle.Event.ON_RESUME -> {
                     // Session first — must be Ready before GL thread calls update()
                     sessionManager.resume()
-                    view.onResume()
+                    glSurfaceView?.onResume()
                 }
 
                 Lifecycle.Event.ON_PAUSE -> {
                     // GL first — stops onDrawFrame before session.pause()
-                    view.onPause()
+                    glSurfaceView?.onPause()
                     sessionManager.pause()
                 }
 
