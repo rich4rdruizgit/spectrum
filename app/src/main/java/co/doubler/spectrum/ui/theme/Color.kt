@@ -46,3 +46,9 @@ val GhostWaveRed = Color(0xFFFF1744)           // Strong neighbor wave
 val GhostWaveOrange = Color(0xFFFFAB00)        // Weak neighbor wave
 val GhostInterferenceTint = Color(0x40FF6D00)  // Interference overlay tint
 val GhostLabelBackground = Color(0xCC0A0A0F)   // Semi-transparent label bg
+
+// ── Bluetooth Node Colors ────────────────────────────────────
+val BluetoothNodeConnected = Color(0xFF5B7FFF)     // Connected device — accent blue
+val BluetoothNodeDetected  = Color(0xFF9E9E9E)     // Detected but not connected — gray
+val BluetoothNodeUnknown   = Color(0xFFFF1744)     // Unknown type device — red
+val BluetoothLabelBackground = Color(0xCC0A0A1F)   // Semi-transparent label bg (blue-tinted)
