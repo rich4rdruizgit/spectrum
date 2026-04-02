@@ -11,10 +11,16 @@ object Constants {
 
     // ── Bluetooth ────────────────────────────────────────────────
     const val BLE_SCAN_PERIOD_MS = 10_000L
+    const val BLE_SCAN_PAUSE_MS = 5_000L
+    const val BLE_NEARBY_TIMEOUT_MS = 30_000L
     const val DEFAULT_TX_POWER = -59 // dBm at 1 m
+
+    // ── WiFi Connected ──────────────────────────────────────────
+    const val WIFI_CONNECTED_CHECK_INTERVAL_MS = 5_000L
 
     // ── Magnetometer ─────────────────────────────────────────────
     val MAG_SENSOR_DELAY = SensorManager.SENSOR_DELAY_GAME
+    const val MAG_HISTORY_DEFAULT_SIZE = 100
     const val MAG_SAFE_LIMIT_UT = 200.0
     const val MAG_LOW_THRESHOLD_UT = 50.0
     const val MAG_HIGH_THRESHOLD_UT = 100.0
