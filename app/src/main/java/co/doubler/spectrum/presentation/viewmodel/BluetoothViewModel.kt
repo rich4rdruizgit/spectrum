@@ -74,13 +74,15 @@ class BluetoothViewModel @Inject constructor(
             .take(BT_MAX_DEVICES)
 
         val connected = deviceNodes.filter { it.isConnected }
+        val isAnomalyActive = deviceNodes.any { it.estimatedDistance > 0f && it.estimatedDistance < 0.5f }
 
         val state = BluetoothUiState(
             devices = deviceNodes,
             connectedDevices = connected,
             isScanning = false,
             totalDeviceCount = nodes.size,
-            screenPositions = screenPositionsRef.get()
+            screenPositions = screenPositionsRef.get(),
+            isAnomalyActive = isAnomalyActive
         )
 
         _uiState.value = state

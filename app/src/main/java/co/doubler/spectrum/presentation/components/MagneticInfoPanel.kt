@@ -1,11 +1,15 @@
 package co.doubler.spectrum.presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +24,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +46,7 @@ fun MagneticInfoPanel(
     state: MagneticUiState,
     modifier: Modifier = Modifier
 ) {
+    val panelVisible = remember { MutableTransitionState(false).apply { targetState = true } }
     val icnirpPercent = (state.currentMagnitude / Constants.MAG_SAFE_LIMIT_UT.toFloat())
         .coerceIn(0f, 1f)
 
@@ -62,6 +68,10 @@ fun MagneticInfoPanel(
         label = "pulseAlpha"
     )
 
+    AnimatedVisibility(
+        visibleState = panelVisible,
+        enter = slideInVertically(tween(350)) { it } + fadeIn(tween(350))
+    ) {
     Column(
         modifier = modifier
             .width(210.dp)
@@ -176,6 +186,7 @@ fun MagneticInfoPanel(
             }
         }
     }
+    } // AnimatedVisibility
 }
 
 @Composable

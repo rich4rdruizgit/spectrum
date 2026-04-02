@@ -106,6 +106,7 @@ private fun GhostArContent(
             scanMode = ScanMode.GHOST,
             isScanning = uiState.isScanning,
             overlayRenderer = ghostRenderer,
+            isAnomalyActive = uiState.isAnomalyActive,
             hudContent = {
                 // ── AR Labels — positioned by GL→Compose screen projections ──
                 uiState.screenPositions.forEach { (bssid, position) ->

@@ -65,6 +65,7 @@ fun ArSceneView(
     scanMode: ScanMode,
     isScanning: Boolean,
     overlayRenderer: OverlayRenderer? = null,
+    isAnomalyActive: Boolean = false,
     modifier: Modifier = Modifier,
     hudContent: @Composable BoxScope.() -> Unit = {},
 ) {
@@ -105,6 +106,7 @@ fun ArSceneView(
         HudOverlay(
             scanMode = scanMode,
             isScanning = isScanning,
+            isAnomalyActive = isAnomalyActive,
             content = hudContent,
         )
     }

@@ -18,7 +18,10 @@ data class CompeteUiState(
     val isScanning: Boolean = false,
 
     /** Total networks detected in this scan cycle (before top-N filtering). */
-    val totalNetworkCount: Int = 0
+    val totalNetworkCount: Int = 0,
+
+    /** True when any AP has RSSI > -50 (unusually strong signal nearby). */
+    val isAnomalyActive: Boolean = false
 )
 
 /**

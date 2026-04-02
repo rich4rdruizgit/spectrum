@@ -93,6 +93,7 @@ private fun MagneticArContent(
             scanMode = ScanMode.MAGNETIC,
             isScanning = uiState.isScanning,
             overlayRenderer = magneticRenderer,
+            isAnomalyActive = uiState.isAnomaly,
             hudContent = {
                 MagneticInfoPanel(
                     state = uiState,
