@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invisible Spectrum — AR Electromagnetic Visualizer</title>
+  <style>
+    :root {
+      --bg: #080812;
+      --bg2: #0d0d1f;
+      --bg3: #111128;
+      --accent-ghost: #4dff91;
+      --accent-compete: #00e5ff;
+      --accent-bt: #448aff;
+      --accent-mag: #e040fb;
+      --text: #e8e8f0;
+      --text-dim: #7a7a9a;
+      --border: rgba(255,255,255,0.07);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(77,255,145,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(224,64,251,0.05) 0%, transparent 60%),
+        var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-ghost);
+      border: 1px solid rgba(77,255,145,0.3);
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 28px;
+      background: rgba(77,255,145,0.05);
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 7vw, 5rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, #4dff91 0%, #00e5ff 40%, #e040fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: var(--text-dim);
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent-ghost);
+      color: #080812;
+    }
+
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    .btn-ghost {
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(255,255,255,0.2);
+      color: var(--text);
+    }
+
+    /* ── Sections ── */
+    section {
+      padding: 80px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 1.05rem;
+      max-width: 560px;
+      margin-bottom: 56px;
+    }
+
+    /* ── Modes grid ── */
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 2px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .mode-card {
+      background: var(--bg2);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.2s;
+    }
+
+    .mode-card:hover { background: var(--bg3); }
+
+    .mode-screenshot {
+      width: 100%;
+      aspect-ratio: 9/16;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+      max-height: 440px;
+      object-position: center top;
+    }
+
+    .mode-info {
+      padding: 28px 28px 32px;
+      flex: 1;
+    }
+
+    .mode-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .mode-tag .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .mode-card h3 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .mode-card p {
+      color: var(--text-dim);
+      font-size: 0.92rem;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .feature-list li {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .feature-list li::before {
+      content: '→';
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Tech stack ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .tech-section {
+      padding: 80px 24px;
+      background: var(--bg2);
+    }
+
+    .tech-section > div {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 48px;
+    }
+
+    .tech-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      transition: border-color 0.2s;
+    }
+
+    .tech-card:hover { border-color: rgba(255,255,255,0.15); }
+
+    .tech-card .icon { font-size: 1.6rem; margin-bottom: 10px; }
+    .tech-card h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 5px; }
+    .tech-card p { font-size: 0.8rem; color: var(--text-dim); }
+
+    /* ── Install ── */
+    .install-section {
+      padding: 80px 24px;
+    }
+
+    .install-section > div {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 48px;
+      max-width: 680px;
+    }
+
+    .step {
+      display: flex;
+      gap: 20px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step:last-child { border-bottom: none; }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dim);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 5px; }
+    .step p  { font-size: 0.85rem; color: var(--text-dim); }
+
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.82rem;
+      background: rgba(255,255,255,0.07);
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: var(--accent-ghost);
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+    }
+
+    footer a { color: var(--text-dim); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* ── Ghost color ── */
+    .ghost  { color: var(--accent-ghost); }
+    .compete { color: var(--accent-compete); }
+    .bt     { color: var(--accent-bt); }
+    .mag    { color: var(--accent-mag); }
+  </style>
+</head>
+<body>
+
+<!-- ─── Hero ─────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="badge">Android · ARCore · Kotlin</div>
+  <h1>Invisible<br><span>Spectrum</span></h1>
+  <p>
+    Visualizá el espectro electromagnético invisible en tiempo real
+    con realidad aumentada. Cuatro modos de detección — WiFi, cobertura,
+    Bluetooth y campo magnético.
+  </p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="https://github.com/rich4rdruizgit/spectrum">
+      Ver en GitHub
+    </a>
+    <a class="btn btn-ghost" href="#modes">Explorar modos</a>
+  </div>
+</div>
+
+<!-- ─── Modes ─────────────────────────────────────────────────── -->
+<section id="modes">
+  <p class="section-label">Modos de visualización</p>
+  <h2>Cuatro capas del espectro</h2>
+  <p class="subtitle">
+    Cada modo superpone datos de sensores reales sobre la cámara AR usando
+    shaders OpenGL ES y overlays Compose.
+  </p>
+
+  <div class="modes-grid">
+
+    <!-- Ghost -->
+    <div class="mode-card">
+      <img class="mode-screenshot" src="images/ghost.png" alt="Ghost mode — redes WiFi AR" />
+      <div class="mode-info">
+        <div class="mode-tag ghost"><span class="dot" style="background:var(--accent-ghost)"></span>Ghost</div>
+        <h3>Redes Fantasma</h3>
+        <p>
+          Detecta y visualiza todas las redes WiFi del entorno como labels AR flotantes.
+          Tocá cualquier red para ver su BSSID, señal en dBm, canal, banda estimada,
+          distancia y alertas de interferencia de canal.
+        </p>
+        <ul class="feature-list">
+          <li>Labels AR posicionados en tiempo real</li>
+          <li>Bottom sheet con detalle completo por red</li>
+          <li>Detección de interferencia de canal</li>
+          <li>Panel colapsable con listado completo</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Ghost detail -->
+    <div class="mode-card">
+      <img class="mode-screenshot" src="images/ghost-detail.png" alt="Ghost mode — detalle de red" />
+      <div class="mode-info">
+        <div class="mode-tag ghost"><span class="dot" style="background:var(--accent-ghost)"></span>Ghost · Detalle</div>
+        <h3>Análisis por red</h3>
+        <p>
+          Tapeá un label AR para abrir el panel de detalle. Señal en tiempo real,
+          barra de calidad de señal, y advertencia de canal si hay redes vecinas
+          compitiendo en el mismo rango de frecuencia.
+        </p>
+        <ul class="feature-list">
+          <li>Señal live en dBm con barra visual</li>
+          <li>Canal, banda (2.4/5 GHz) y distancia estimada</li>
+          <li>Badge "CONECTADO" cuando es la red activa</li>
+          <li>Alerta de interferencia de canal</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Compete -->
+    <div class="mode-card">
+      <img class="mode-screenshot" src="images/compete.png" alt="Compete mode — cobertura WiFi" />
+      <div class="mode-info">
+        <div class="mode-tag compete"><span class="dot" style="background:var(--accent-compete)"></span>Compete</div>
+        <h3>Modo Competencia</h3>
+        <p>
+          Rankeá redes WiFi por cobertura en tiempo real. Un scoreboard colapsable
+          muestra el porcentaje de cobertura de cada AP, su señal en dBm y su
+          posición relativa en el ranking.
+        </p>
+        <ul class="feature-list">
+          <li>Labels AR posicionados via GL→Compose bridge</li>
+          <li>Scoreboard con barra de cobertura por AP</li>
+          <li>Ranking en tiempo real con delta de posición</li>
+          <li>Valores dBm visibles en el scoreboard</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bluetooth -->
+    <div class="mode-card">
+      <img class="mode-screenshot" src="images/bluetooth.png" alt="Bluetooth Vision mode" />
+      <div class="mode-info">
+        <div class="mode-tag bt"><span class="dot" style="background:var(--accent-bt)"></span>BT Vision</div>
+        <h3>Bluetooth Vision</h3>
+        <p>
+          Constelación AR de dispositivos Bluetooth cercanos. Cada dispositivo
+          aparece como un nodo con línea punteada hacia el centro, diferenciado
+          por tipo (auriculares, reloj, parlante, teléfono) y estado de conexión.
+        </p>
+        <ul class="feature-list">
+          <li>Nodos con icono según tipo de dispositivo</li>
+          <li>Líneas punteadas dibujadas con Canvas Compose</li>
+          <li>Indicador verde para dispositivos conectados</li>
+          <li>Stats bar: detectados · conectados · disponibles</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mag Field full width -->
+    <div class="mode-card" style="grid-column: 1 / -1; flex-direction: row; align-items: stretch;">
+      <img class="mode-screenshot"
+           src="images/magfield.png"
+           alt="Magnetic Field mode"
+           style="max-height: 500px; width: 260px; flex-shrink: 0; object-fit: cover; object-position: top;" />
+      <div class="mode-info" style="display:flex; flex-direction:column; justify-content:center;">
+        <div class="mode-tag mag"><span class="dot" style="background:var(--accent-mag)"></span>Mag Field</div>
+        <h3>Campos Magnéticos</h3>
+        <p>
+          Visualización del campo magnético del entorno usando un shader OpenGL ES
+          con grilla de puntos reactiva. Detecta anomalías en tiempo real y las
+          clasifica según su fuente probable (motor, transformador, imán, cable con
+          carga, etc.) usando un clasificador de firmas basado en reglas.
+        </p>
+        <ul class="feature-list">
+          <li>Dot grid shader GLSL — brillo reactivo a la magnitud del campo</li>
+          <li>Pulso de anillo expansivo en detecciones de anomalía</li>
+          <li>Clasificador de fuentes: 9 categorías (motor, microondas, imán, etc.)</li>
+          <li>Nodos AR pulsantes con valor µT y firma de fuente</li>
+          <li>Barra ICNIRP con nivel de referencia (200 µT) y estado seguro/no seguro</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── Tech Stack ─────────────────────────────────────────────── -->
+<div class="tech-section">
+  <div>
+    <p class="section-label">Stack técnico</p>
+    <h2>Construido sobre ARCore y Compose</h2>
+    <p class="subtitle">
+      Arquitectura limpia: cada modo tiene su ViewModel, Repository y OverlayRenderer independiente.
+    </p>
+
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="icon">🏗️</div>
+        <h4>Kotlin + Jetpack Compose</h4>
+        <p>UI declarativa, navegación tipada, coroutines para flujo de sensores.</p>
+      </div>
+      <div class="tech-card">
+        <div class="icon">📡</div>
+        <h4>ARCore</h4>
+        <p>Sesión AR con lifecycle management. Tracking del espacio para posicionamiento de labels.</p>
+      </div>
+      <div class="tech-card">
+        <div class="icon">🎨</div>
+        <h4>OpenGL ES 3.0</h4>
+        <p>Shaders GLSL por modo — dot grids, blobs animados y efectos de campo.</p>
+      </div>
+      <div class="tech-card">
+        <div class="icon">💉</div>
+        <h4>Hilt</h4>
+        <p>Inyección de dependencias. ViewModels, repositories y session manager.</p>
+      </div>
+      <div class="tech-card">
+        <div class="icon">🔄</div>
+        <h4>StateFlow + Coroutines</h4>
+        <p>Flujo reactivo desde los sensores del dispositivo hasta la UI.</p>
+      </div>
+      <div class="tech-card">
+        <div class="icon">🧲</div>
+        <h4>Sensor Fusion</h4>
+        <p>WiFi Scanner, Bluetooth LE, magnetómetro — APIs nativas de Android.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── How to run ─────────────────────────────────────────────── -->
+<div class="install-section">
+  <div>
+    <p class="section-label">Cómo ejecutar</p>
+    <h2>Requisitos y setup</h2>
+    <p class="subtitle">
+      Requiere un dispositivo Android físico con soporte ARCore. No funciona en emulador.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h4>Requisitos</h4>
+          <p>
+            Android 8.0+ (API 26) · ARCore compatible ·
+            Permisos: CAMERA, ACCESS_FINE_LOCATION, BLUETOOTH_SCAN.<br>
+            Verificá compatibilidad en
+            <a href="https://developers.google.com/ar/devices" style="color:var(--accent-ghost)">
+              developers.google.com/ar/devices</a>.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h4>Clonar el repositorio</h4>
+          <p>
+            <code>git clone https://github.com/rich4rdruizgit/spectrum.git</code><br>
+            Abrí el proyecto en Android Studio Hedgehog o superior.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h4>Conectar dispositivo</h4>
+          <p>
+            Habilitá USB Debugging en tu dispositivo Android.
+            Conectalo por USB o usá Wireless Debugging.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <h4>Run</h4>
+          <p>
+            Seleccioná el target <code>app</code> y presioná Run (▶) en Android Studio,
+            o ejecutá <code>./gradlew installDebug</code> desde la raíz del proyecto.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div>
+          <h4>Permisos en el dispositivo</h4>
+          <p>
+            Al abrir cada modo por primera vez, la app solicita los permisos necesarios.
+            Cámara requerida para AR · Ubicación para WiFi scan · Bluetooth para BT Vision.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Footer ─────────────────────────────────────────────────── -->
+<footer>
+  <p>
+    Invisible Spectrum · v1.0 ·
+    <a href="https://github.com/rich4rdruizgit/spectrum">github.com/rich4rdruizgit/spectrum</a>
+  </p>
+</footer>
+
+</body>
+</html>
