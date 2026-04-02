@@ -106,6 +106,10 @@ class RenderPipeline(
         renderOverlays(frame, camera)
     }
 
+    fun setCameraPostFx(tintColor: FloatArray, trackingLost: Boolean) {
+        cameraBackgroundRenderer.setPostFxParams(tintColor, trackingLost)
+    }
+
     /**
      * Register an overlay renderer.
      *

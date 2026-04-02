@@ -3,6 +3,7 @@ package co.doubler.spectrum.rendering.pipeline
 import android.content.Context
 import android.opengl.GLES11Ext
 import android.opengl.GLES30
+import android.util.Log
 import co.doubler.spectrum.R
 import co.doubler.spectrum.rendering.shader.ShaderProgram
 import co.doubler.spectrum.util.Constants
@@ -30,6 +31,15 @@ class CameraBackgroundRenderer(private val context: Context) {
     private var shaderProgram: ShaderProgram? = null
     private var vertexVbo: Int = 0
     private var texCoordVbo: Int = 0
+
+    private var uVignetteStrengthLoc: Int = -1
+    private var uContrastLoc: Int = -1
+    private var uSaturationLoc: Int = -1
+    private var uTintColorLoc: Int = -1
+    private var uTrackingLostLoc: Int = -1
+
+    @Volatile private var postFxTint: FloatArray = floatArrayOf(1f, 1f, 1f)
+    @Volatile private var postFxTrackingLost: Boolean = false
 
     private val quadVertexBuffer: FloatBuffer = createFloatBuffer(Constants.FULLSCREEN_QUAD_COORDS)
     private val transformedUvBuffer: FloatBuffer = createFloatBuffer(Constants.FULLSCREEN_QUAD_TEX_COORDS)
@@ -78,6 +88,17 @@ class CameraBackgroundRenderer(private val context: Context) {
             R.raw.camera_fragment
         )
 
+        val prog = shaderProgram!!
+        uVignetteStrengthLoc = prog.getUniformLocation("u_VignetteStrength")
+        uContrastLoc         = prog.getUniformLocation("u_Contrast")
+        uSaturationLoc       = prog.getUniformLocation("u_Saturation")
+        uTintColorLoc        = prog.getUniformLocation("u_TintColor")
+        uTrackingLostLoc     = prog.getUniformLocation("u_TrackingLost")
+        if (uVignetteStrengthLoc == -1 || uContrastLoc == -1 || uSaturationLoc == -1 ||
+            uTintColorLoc == -1 || uTrackingLostLoc == -1) {
+            Log.w(TAG, "One or more postfx uniform locations not found — check shader uniform names")
+        }
+
         // 4. Create VBOs
         val vbos = IntArray(2)
         GLES30.glGenBuffers(2, vbos, 0)
@@ -103,6 +124,11 @@ class CameraBackgroundRenderer(private val context: Context) {
         )
 
         GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
+    }
+
+    fun setPostFxParams(tintColor: FloatArray, trackingLost: Boolean) {
+        postFxTint = tintColor
+        postFxTrackingLost = trackingLost
     }
 
     /**
@@ -134,6 +160,12 @@ class CameraBackgroundRenderer(private val context: Context) {
         // 3. Use camera shader
         val program = shaderProgram ?: return
         program.use()
+
+        GLES30.glUniform1f(uVignetteStrengthLoc, 0.4f)
+        GLES30.glUniform1f(uContrastLoc, 1.1f)
+        GLES30.glUniform1f(uSaturationLoc, 0.85f)
+        GLES30.glUniform3fv(uTintColorLoc, 1, postFxTint, 0)
+        GLES30.glUniform1i(uTrackingLostLoc, if (postFxTrackingLost) 1 else 0)
 
         // 4. Bind OES texture
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + Constants.CAMERA_TEXTURE_UNIT)
@@ -200,6 +232,8 @@ class CameraBackgroundRenderer(private val context: Context) {
     }
 
     private companion object {
+
+        const val TAG = "CameraBackgroundRenderer"
 
         fun createFloatBuffer(data: FloatArray): FloatBuffer {
             return ByteBuffer.allocateDirect(data.size * Constants.FLOAT_SIZE_BYTES)

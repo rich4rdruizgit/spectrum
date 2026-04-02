@@ -127,6 +127,20 @@ fun ArSceneView(
         view.queueEvent { renderer.onSessionReady(readyState) }
     }
 
+    // ── ScanMode → tint → GL thread ──────────────────────────────
+    val tintForMode = remember(scanMode) {
+        when (scanMode) {
+            ScanMode.GHOST     -> floatArrayOf(0.9f, 0.95f, 1.0f)
+            ScanMode.BLUETOOTH -> floatArrayOf(0.88f, 0.97f, 1.0f)
+            ScanMode.MAGNETIC  -> floatArrayOf(1.0f, 0.96f, 0.88f)
+            ScanMode.COMPETE   -> floatArrayOf(1.0f, 1.0f, 1.0f)
+        }
+    }
+    LaunchedEffect(tintForMode, glSurfaceView) {
+        val view = glSurfaceView ?: return@LaunchedEffect
+        view.queueEvent { renderer.setCameraPostFxTint(tintForMode) }
+    }
+
     // ── Lifecycle observer: pause/resume GL + session ─────────────
     // NOTE: Keyed on lifecycleOwner only (NOT glSurfaceView).
     // sessionManager.resume/pause must NOT be gated on glSurfaceView: on first
