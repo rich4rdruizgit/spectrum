@@ -48,6 +48,19 @@ object Constants {
     const val GHOST_DISTANCE_MIN_M = 0.5f
     const val GHOST_DISTANCE_MAX_M = 5.0f
 
+    // ── Bluetooth Mode ──────────────────────────────────────────────
+    const val BT_MAX_DEVICES = 15
+    const val BT_NODE_RADIUS = 0.03f           // circle radius in aspect-corrected NDC
+    const val BT_RING_SPEED = 0.8f             // rings per second (expansion speed)
+    const val BT_RING_WIDTH = 0.012f           // ring band half-width in NDC
+    const val BT_MAX_RING_RADIUS = 0.25f       // max expansion radius in aspect-corrected NDC
+    const val BT_LINE_WIDTH = 0.005f           // connection line half-width in NDC
+    const val BT_LINE_INTENSITY = 0.4f         // connection line max alpha contribution
+    const val BT_RSSI_MIN = -90               // weakest signal to display
+    const val BT_RSSI_MAX = -30               // strongest expected signal
+    const val BT_DISTANCE_MIN_M = 0.3f         // closest device placement
+    const val BT_DISTANCE_MAX_M = 8.0f         // farthest device placement
+
     /** Fullscreen quad vertex coords (triangle strip): BL, BR, TL, TR */
     val FULLSCREEN_QUAD_COORDS = floatArrayOf(
         -1.0f, -1.0f, // bottom-left
