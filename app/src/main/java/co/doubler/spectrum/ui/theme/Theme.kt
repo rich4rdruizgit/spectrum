@@ -1,58 +1,76 @@
 package co.doubler.spectrum.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+// ── Dark Color Scheme (dark-only, no light variant) ──────────
+
+private val SpectrumColorScheme = darkColorScheme(
+    primary = NeonCyan,
+    secondary = ElectricPurple,
+    tertiary = SignalGreen,
+    background = NearBlack,
+    surface = DarkSurface,
+    surfaceVariant = DarkSurface,
+    error = HotRed,
+    onPrimary = OnPrimary,
+    onSecondary = OnSecondary,
+    onTertiary = NearBlack,
+    onBackground = OnDark,
+    onSurface = OnDark,
+    onSurfaceVariant = TextSecondary,
+    onError = OnDark,
+    outline = TextSecondary,
+    outlineVariant = TextDisabled
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+// ── HUD Styling Constants ────────────────────────────────────
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+@Immutable
+data class HudStyling(
+    val strokeWidth: Dp = 1.5.dp,
+    val cornerRadius: Dp = 4.dp,
+    val textSize: TextUnit = 12.sp,
+    val backgroundAlpha: Float = 0.5f,
+    val animationDuration: Int = 300
 )
+
+val LocalHudStyling = staticCompositionLocalOf { HudStyling() }
+
+// ── Sharp Corners (HUD aesthetic) ────────────────────────────
+
+private val SpectrumShapes = Shapes(
+    extraSmall = RoundedCornerShape(2.dp),
+    small = RoundedCornerShape(4.dp),
+    medium = RoundedCornerShape(4.dp),
+    large = RoundedCornerShape(0.dp),
+    extraLarge = RoundedCornerShape(0.dp)
+)
+
+// ── Theme Composable ─────────────────────────────────────────
 
 @Composable
-fun InvisibleSpectrumTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+fun SpectrumTheme(
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    CompositionLocalProvider(
+        LocalHudStyling provides HudStyling()
+    ) {
+        MaterialTheme(
+            colorScheme = SpectrumColorScheme,
+            typography = Typography,
+            shapes = SpectrumShapes,
+            content = content
+        )
     }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
 }

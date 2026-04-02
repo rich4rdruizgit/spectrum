@@ -2,10 +2,40 @@ package co.doubler.spectrum.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// ── Core Palette ──────────────────────────────────────────────
+val NeonCyan = Color(0xFF00E5FF)
+val ElectricPurple = Color(0xFFAA00FF)
+val SignalGreen = Color(0xFF76FF03)
+val NearBlack = Color(0xFF0A0A0F)
+val DarkSurface = Color(0xFF1A1A2E)
+val HotRed = Color(0xFFFF1744)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// ── On-Colors (contrast for readability) ─────────────────────
+val OnDark = Color(0xFFE0E0E0)
+val OnPrimary = Color(0xFF003544)
+val OnSecondary = Color(0xFF3A0066)
+
+// ── Mode Accent Colors ───────────────────────────────────────
+val GhostAccent = Color(0xFFFF3366)         // Red/pink — WiFi ghost visualization
+val CompeteAccent = Color(0xFF00FF88)       // Green — competition/signal strength
+val BluetoothAccent = Color(0xFF5B7FFF)     // Blue — Bluetooth scanning
+val MagneticAccent = Color(0xFFAA44FF)      // Purple — magnetic field
+
+// ── Secondary Accents ────────────────────────────────────────
+val CyanAccent = Color(0xFF00E5FF)          // Informational highlights
+val AmberWarning = Color(0xFFFFAB00)        // Warnings (high magnetic fields, weak signals)
+
+// ── Text Colors ──────────────────────────────────────────────
+val TextPrimary = Color(0xFFF5F5F5)         // Bright white for primary text
+val TextSecondary = Color(0xFF9E9E9E)       // Muted gray for secondary text
+val TextDisabled = Color(0xFF616161)        // Disabled/tertiary text
+
+// ── Danger / Warning ─────────────────────────────────────────
+val DangerRed = Color(0xFFFF1744)           // Critical alerts, high magnetic anomaly
+val WarningAmber = Color(0xFFFFAB00)        // Caution states
+
+// ── HUD-Specific Colors ─────────────────────────────────────
+val HudBracketColor = Color(0xFF00E5FF)     // Targeting bracket outlines
+val HudScanningPulse = Color(0x8000E5FF)    // Semi-transparent pulse animation
+val HudGridLines = Color(0x331A1A2E)        // Subtle grid overlay
+val HudTextGlow = Color(0xFF76FF03)         // Glowing data readout text

@@ -8,15 +8,7 @@ build/
 
 # Android Studio / IntelliJ IDEA
 *.iml
-.idea/caches
-.idea/libraries
-.idea/modules.xml
-.idea/workspace.xml
-.idea/navEditor.xml
-.idea/assetWizardSettings.xml
-.idea/deploymentTargetDropDown.xml
-.idea/shelf/
-.idea/vcs.xml
+.idea/
 *.ipr
 *.iws
 
@@ -57,3 +49,29 @@ Thumbs.db
 *.aar
 *.ap_
 *.aab
+
+# KSP (Kotlin Symbol Processing)
+/app/build/generated/ksp/
+**/generated/ksp/
+
+# Hilt / Dagger generated
+**/generated/hilt/
+**/hilt_aggregated_deps/
+
+# Room schema exports
+/app/schemas/
+
+# Annotation processors
+**/generated/source/kapt/
+
+# Proguard
+mapping.txt
+
+# Android profiling
+*.hprof
+
+# Crashlytics
+crashlytics-build.properties
+
+# SDD internal
+.atl/
