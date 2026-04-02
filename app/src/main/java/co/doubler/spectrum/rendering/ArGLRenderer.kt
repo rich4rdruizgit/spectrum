@@ -45,6 +45,8 @@ class ArGLRenderer(
     private var viewportHeight: Int = 0
     private var pipelineInitialized: Boolean = false
 
+    @Volatile private var currentTint: FloatArray = floatArrayOf(1f, 1f, 1f)
+
     // ── GLSurfaceView.Renderer ─────────────────────────────────────
 
     /**
@@ -116,11 +118,14 @@ class ArGLRenderer(
         val frame = sessionManager.update() ?: return
         val camera = frame.camera
 
-        // Always draw camera background — visible even before tracking locks in
+        val trackingLost = camera.trackingState != TrackingState.TRACKING
+        pipeline.setCameraPostFx(currentTint, trackingLost)
+
+        // Always draw camera background — visible even when tracking is lost
         pipeline.renderCameraBackground(frame)
 
         // Overlays need a valid pose — skip until TRACKING
-        if (camera.trackingState != TrackingState.TRACKING) return
+        if (trackingLost) return
         pipeline.renderOverlays(frame, camera)
     }
 
@@ -133,6 +138,10 @@ class ArGLRenderer(
      * @return the current [RenderPipeline], or null if the GL surface hasn't been created yet.
      */
     fun getRenderPipeline(): RenderPipeline? = renderPipeline
+
+    fun setCameraPostFxTint(tint: FloatArray) {
+        currentTint = tint
+    }
 
     /**
      * Release all GL resources held by the pipeline.
