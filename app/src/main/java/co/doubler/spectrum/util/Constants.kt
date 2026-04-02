@@ -25,6 +25,14 @@ object Constants {
     const val MAG_LOW_THRESHOLD_UT = 50.0
     const val MAG_HIGH_THRESHOLD_UT = 100.0
 
+    // ── Magnetic Mode ────────────────────────────────────────────
+    const val MAG_PARTICLE_SPEED_MIN = 0.03f
+    const val MAG_PARTICLE_SPEED_MAX = 0.40f
+    const val MAG_ANOMALY_WINDOW = 30
+    const val MAG_ANOMALY_THRESHOLD_UT = 25.0f
+    const val MAG_ANOMALY_DECAY_MS = 2000L
+    const val MAG_COLOR_LERP_WINDOW_UT = 5.0f
+
     // ── AR ───────────────────────────────────────────────────────
     const val AR_MIN_DISTANCE_M = 0.1
     const val AR_MAX_DISTANCE_M = 20.0
