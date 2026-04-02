@@ -1,5 +1,6 @@
 package co.doubler.spectrum.presentation.screen
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,6 +91,7 @@ fun BluetoothScreen(
 
 // ── AR Content ───────────────────────────────────────────────────────
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 private fun BluetoothArContent(viewModel: BluetoothViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -161,7 +163,7 @@ private fun BluetoothArContent(viewModel: BluetoothViewModel) {
                         modifier = Modifier.offset {
                             IntOffset(
                                 (tuPosition.x - 10).toInt(),
-                                (tuPosition.y + 18.dp.roundToPx())
+                                (tuPosition.y.toInt() + 18.dp.roundToPx())
                             )
                         }
                     )
