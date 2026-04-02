@@ -1,0 +1,59 @@
+# Gradle files
+.gradle/
+build/
+/*/build/
+
+# Kotlin
+.kotlin/
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetDropDown.xml
+.idea/shelf/
+.idea/vcs.xml
+*.ipr
+*.iws
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Log files
+*.log
+captures/
+
+# Android Studio captures
+captures/
+
+# NDK
+.externalNativeBuild/
+.cxx/
+
+# Keystore files (Never version your secrets!)
+*.jks
+*.keystore
+*.p12
+*.key
+
+# Google Services
+# google-services.json (Uncomment if you want to ignore it)
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Built variants
+*.apk
+*.aar
+*.ap_
+*.aab
