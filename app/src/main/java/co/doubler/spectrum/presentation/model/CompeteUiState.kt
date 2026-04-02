@@ -1,5 +1,7 @@
 package co.doubler.spectrum.presentation.model
 
+import androidx.compose.ui.geometry.Offset
+
 /**
  * Presentation-layer UI state for Compete mode.
  *
@@ -21,7 +23,10 @@ data class CompeteUiState(
     val totalNetworkCount: Int = 0,
 
     /** True when any AP has RSSI > -50 (unusually strong signal nearby). */
-    val isAnomalyActive: Boolean = false
+    val isAnomalyActive: Boolean = false,
+
+    /** Screen-space positions written by GL renderer, keyed by BSSID. */
+    val screenPositions: Map<String, Offset> = emptyMap()
 )
 
 /**

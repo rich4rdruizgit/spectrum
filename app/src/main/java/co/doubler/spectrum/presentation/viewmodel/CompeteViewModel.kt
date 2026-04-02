@@ -1,5 +1,6 @@
 package co.doubler.spectrum.presentation.viewmodel
 
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.doubler.spectrum.ar.ArSessionManager
@@ -54,6 +55,9 @@ class CompeteViewModel @Inject constructor(
      */
     val accessPointsRef: AtomicReference<List<CompeteAp>> = AtomicReference(emptyList())
 
+    /** Written by CompeteOverlayRenderer on GL thread, read by ViewModel on main thread. */
+    val screenPositionsRef: AtomicReference<Map<String, Offset>> = AtomicReference(emptyMap())
+
     // ── Coverage history tracking ─────────────────────────────────────────────
 
     /**
@@ -81,7 +85,8 @@ class CompeteViewModel @Inject constructor(
                 accessPoints = emptyList(),
                 scoreboard = emptyList(),
                 isScanning = false,
-                totalNetworkCount = 0
+                totalNetworkCount = 0,
+                screenPositions = screenPositionsRef.get()
             )
             accessPointsRef.set(emptyList())
             return
@@ -98,7 +103,8 @@ class CompeteViewModel @Inject constructor(
                 accessPoints = emptyList(),
                 scoreboard = emptyList(),
                 isScanning = false,
-                totalNetworkCount = scans.size
+                totalNetworkCount = scans.size,
+                screenPositions = screenPositionsRef.get()
             )
             accessPointsRef.set(emptyList())
             return
@@ -126,7 +132,8 @@ class CompeteViewModel @Inject constructor(
             accessPoints = apsWithCoverage,
             scoreboard = scoreboard,
             isScanning = false,
-            totalNetworkCount = scans.size
+            totalNetworkCount = scans.size,
+            screenPositions = screenPositionsRef.get()
         )
 
         _uiState.value = state

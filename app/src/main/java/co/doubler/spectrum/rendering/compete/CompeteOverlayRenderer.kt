@@ -3,6 +3,7 @@ package co.doubler.spectrum.rendering.compete
 import android.content.Context
 import android.opengl.GLES30
 import android.opengl.Matrix
+import androidx.compose.ui.geometry.Offset
 import co.doubler.spectrum.R
 import co.doubler.spectrum.presentation.model.CompeteAp
 import co.doubler.spectrum.rendering.pipeline.OverlayRenderer
@@ -33,7 +34,8 @@ import kotlin.math.sin
  */
 class CompeteOverlayRenderer(
     private val context: Context,
-    private val accessPointsRef: AtomicReference<List<CompeteAp>>
+    private val accessPointsRef: AtomicReference<List<CompeteAp>>,
+    private val screenPositionsRef: AtomicReference<Map<String, Offset>>
 ) : OverlayRenderer {
 
     private var shaderProgram: ShaderProgram? = null
@@ -122,16 +124,19 @@ class CompeteOverlayRenderer(
 
         // ── 1. Project each AP to NDC and pack uniform arrays ─────────────────
 
+        val screenPositions = mutableMapOf<String, Offset>()
+
         for (i in 0 until count) {
             val ap = aps[i]
             val worldPoint = azimuthToWorldPoint(ap.azimuthDeg, ap.estimatedDistance)
             val ndc = projectToNDC(worldPoint, projectionMatrix, viewMatrix)
+            val behindCamera = ndc == null
 
             val idx = i * 4
             apCentersArray[idx + 0] = ndc?.get(0) ?: 0f  // x NDC
             apCentersArray[idx + 1] = ndc?.get(1) ?: 0f  // y NDC
-            apCentersArray[idx + 2] = if (ndc == null) 0f else ap.signalWeight // weight (0 = invisible)
-            apCentersArray[idx + 3] = 0f                                        // unused
+            apCentersArray[idx + 2] = if (behindCamera) 0f else ap.signalWeight // weight (0 = invisible)
+            apCentersArray[idx + 3] = 0f                                         // unused
 
             // Unpack ARGB Long → normalized rgba floats
             val color = ap.color
@@ -139,7 +144,17 @@ class CompeteOverlayRenderer(
             apColorsArray[idx + 1] = ((color shr 8) and 0xFF) / 255f   // G
             apColorsArray[idx + 2] = (color and 0xFF) / 255f           // B
             apColorsArray[idx + 3] = ((color shr 24) and 0xFF) / 255f  // A
+
+            // Compute screen positions for Compose AP labels
+            if (!behindCamera && ndc != null) {
+                val screenX = (ndc[0] + 1f) / 2f * viewportWidth
+                val screenY = (1f - ndc[1]) / 2f * viewportHeight
+                screenPositions[ap.bssid] = Offset(screenX, screenY)
+            }
         }
+
+        // Write screen positions for Compose labels (atomic swap, lock-free)
+        screenPositionsRef.set(screenPositions)
 
         // Zero out unused slots (weight = 0 disables AP in shader)
         for (i in count until COMPETE_MAX_APS) {
