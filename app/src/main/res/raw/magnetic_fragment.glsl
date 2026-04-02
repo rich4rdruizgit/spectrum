@@ -4,86 +4,58 @@ precision mediump float;
 in vec2 v_TexCoord;
 
 uniform float u_Time;
-uniform float u_AspectRatio;       // viewport width / height
-uniform float u_FieldX;            // normalized field direction X [-1, 1]
-uniform float u_FieldY;            // normalized field direction Y [-1, 1]
-uniform float u_Magnitude;         // raw field strength in µT
-uniform int   u_IsAnomaly;         // 0 or 1
-uniform float u_AnomalyIntensity;  // [0, 1]
-uniform vec3  u_Color;             // pre-computed RGB from magnitude band
+uniform float u_AspectRatio;
+uniform float u_FieldX;
+uniform float u_FieldY;
+uniform float u_Magnitude;
+uniform int   u_IsAnomaly;
+uniform float u_AnomalyIntensity;
+uniform vec3  u_Color;
 
 out vec4 fragColor;
 
-// ── Utilities ────────────────────────────────────────────────────────────────
-
-float hash21(vec2 p) {
-    p = fract(p * vec2(127.1, 311.7));
-    p += dot(p, p + 19.19);
-    return fract(p.x * p.y);
-}
-
-// ── Main ─────────────────────────────────────────────────────────────────────
 void main() {
-    // Aspect-corrected UV space: x in [0, aspectRatio], y in [0, 1]
     vec2 uvA = vec2(v_TexCoord.x * u_AspectRatio, v_TexCoord.y);
-
-    vec2 fieldDir = vec2(u_FieldX, u_FieldY);
-    vec2 perpDir  = vec2(-fieldDir.y, fieldDir.x);
 
     vec4 result = vec4(0.0);
 
-    // ── Layer 1: Animated flow lines ─────────────────────────────────────────
-    float lineSpacing = u_AspectRatio / 14.0;
+    // ── Dot grid ─────────────────────────────────────────────────────────────
+    float dotSpacing = 0.055;
+    vec2  gridFract  = fract(uvA / dotSpacing) - 0.5;
+    float dotDist    = length(gridFract);
+    float dotRadius  = 0.22;
+    float dot        = 1.0 - smoothstep(dotRadius - 0.05, dotRadius, dotDist);
 
-    // Distance to nearest flow line (perpendicular to field)
-    float lineCoord = dot(uvA, perpDir);
-    float lineDist  = abs(fract(lineCoord / lineSpacing + 0.5) - 0.5) * lineSpacing;
-    float lineWidth = lineSpacing * 0.055;
-    float lineAlpha = 1.0 - smoothstep(0.0, lineWidth, lineDist);
+    // Base brightness driven by field intensity (normalized to ICNIRP 200 µT)
+    float intensity  = clamp(u_Magnitude / 200.0, 0.0, 1.0);
+    float baseGlow   = 0.12 + intensity * 0.35;
 
-    // Scrolling animation along field direction
-    float flowCoord = dot(uvA, fieldDir);
-    float flowAnim  = fract(flowCoord / lineSpacing - u_Time * 0.28);
-    float flowFade  = smoothstep(0.0, 0.25, flowAnim) * (1.0 - smoothstep(0.65, 1.0, flowAnim));
-    float flowIntensity = lineAlpha * flowFade;
+    result += vec4(u_Color * dot * baseGlow, dot * baseGlow * 0.55);
 
-    result += vec4(u_Color * flowIntensity * 0.50, flowIntensity * 0.50);
+    // Subtle field-direction shimmer: dots slightly brighter along field axis
+    vec2 fieldDir   = vec2(u_FieldX, u_FieldY);
+    float shimmer   = 0.5 + 0.5 * sin(dot(uvA, fieldDir) * 18.0 - u_Time * 1.4);
+    result          += vec4(u_Color * dot * shimmer * 0.06, dot * shimmer * 0.06);
 
-    // ── Layer 2: Particles flowing along field lines ─────────────────────────
-    const float PARTICLE_N = 10.0;
-    const float LINE_N     = 14.0;
-
-    for (float i = 0.0; i < PARTICLE_N; i++) {
-        float seed      = hash21(vec2(i, 37.5));
-        float lineIdx   = floor(i * LINE_N / PARTICLE_N);
-        // Perp offset: place particle at its flow-line position
-        float perpOff   = (lineIdx + 0.5 + (seed - 0.5) * 0.4) * lineSpacing;
-        // Along-field offset: cycle using fract so particle loops endlessly
-        float along     = fract(seed * 1.7 + u_Time * (0.18 + seed * 0.22));
-        float alongPos  = along * u_AspectRatio * 1.4 - u_AspectRatio * 0.2;
-
-        vec2 particlePos = perpDir * perpOff + fieldDir * alongPos;
-
-        float dist   = length(uvA - particlePos);
-        float radius = lineSpacing * 0.13;
-        float pAlpha = (1.0 - smoothstep(0.0, radius, dist)) * (0.35 + seed * 0.45);
-
-        result += vec4(u_Color * 1.3 * pAlpha, pAlpha);
-    }
-
-    // ── Layer 3: Anomaly pulse ring ──────────────────────────────────────────
+    // ── Anomaly: dots around center pulse red/orange ──────────────────────────
     if (u_IsAnomaly == 1) {
-        vec2  center = vec2(0.5 * u_AspectRatio, 0.5);
-        float distC  = length(uvA - center);
-        float pulseT = fract(u_Time * 1.6);
-        float ringR  = 0.06 + pulseT * 0.42 * u_AspectRatio;
-        float ringW  = 0.022 * u_AspectRatio;
-        float ringA  = (1.0 - smoothstep(0.0, ringW, abs(distC - ringR)))
-                     * (1.0 - pulseT)
-                     * u_AnomalyIntensity;
-        result += vec4(1.0, 0.10, 0.06, ringA * 0.88);
+        vec2  center      = vec2(0.5 * u_AspectRatio, 0.5);
+        float distCenter  = length(uvA - center);
+        float anomalyZone = u_AspectRatio * 0.35;
+        float falloff     = 1.0 - smoothstep(0.0, anomalyZone, distCenter);
+        float pulse       = 0.5 + 0.5 * sin(u_Time * 5.0);
+        float anomalyGlow = dot * falloff * u_AnomalyIntensity * (0.6 + pulse * 0.4);
+
+        result += vec4(1.0, 0.18, 0.06, anomalyGlow * 0.85);
+
+        // Expanding ring at center
+        float pulseT = fract(u_Time * 1.4);
+        float ringR  = 0.04 + pulseT * 0.38 * u_AspectRatio;
+        float ringW  = 0.018 * u_AspectRatio;
+        float ringA  = (1.0 - smoothstep(0.0, ringW, abs(distCenter - ringR)))
+                     * (1.0 - pulseT) * u_AnomalyIntensity;
+        result += vec4(1.0, 0.10, 0.06, ringA * 0.9);
     }
 
-    // ── Output ───────────────────────────────────────────────────────────────
     fragColor = clamp(result, 0.0, 1.0);
 }
