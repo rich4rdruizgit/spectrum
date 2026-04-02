@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -115,6 +116,7 @@ private fun MagneticArContent(viewModel: MagneticViewModel) {
 
                 // ── Stats bar at bottom ──
                 MagFieldStatsBar(
+                    currentMagnitude = uiState.currentMagnitude,
                     averageMagnitude = uiState.averageMagnitude,
                     isSafe = uiState.isSafe,
                     modifier = Modifier.align(Alignment.BottomCenter)
@@ -198,10 +200,17 @@ private fun AnomalyNode(
 
 @Composable
 private fun MagFieldStatsBar(
+    currentMagnitude: Float,
     averageMagnitude: Float,
     isSafe: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val icnirpPercent = (currentMagnitude / Constants.MAG_SAFE_LIMIT_UT.toFloat()).coerceIn(0f, 1f)
+    val icnirpColor = when {
+        icnirpPercent < 0.4f -> Color(0xFF44FF88)
+        icnirpPercent < 0.7f -> Color(0xFFFFAA22)
+        else                 -> Color(0xFFFF2222)
+    }
     val safeColor = if (isSafe) Color(0xFF44FF88) else Color(0xFFFF2222)
     val safeText = if (isSafe)
         "✓ DENTRO DE LÍMITES SEGUROS (< ${Constants.MAG_SAFE_LIMIT_UT} µT)"
@@ -213,13 +222,11 @@ private fun MagFieldStatsBar(
             .fillMaxWidth()
             .background(NearBlack.copy(alpha = 0.88f))
             .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(3.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // Average magnitude row
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "🧲 ",
-                fontSize = 13.sp
-            )
+            Text(text = "🧲 ", fontSize = 13.sp)
             Text(
                 text = "CAMPO PROMEDIO: ${"%.1f".format(averageMagnitude)} µT",
                 fontFamily = DataFontFamily,
@@ -228,6 +235,42 @@ private fun MagFieldStatsBar(
                 color = MagneticAccent
             )
         }
+
+        // ICNIRP reference level bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "ICNIRP",
+                fontFamily = DataFontFamily,
+                fontSize = 10.sp,
+                color = Color(0xAAFFFFFF)
+            )
+            Text(
+                text = "${(icnirpPercent * 100).toInt()}%  •  ${"%.1f".format(currentMagnitude)} µT",
+                fontFamily = DataFontFamily,
+                fontSize = 10.sp,
+                color = icnirpColor
+            )
+        }
+        LinearProgressIndicator(
+            progress = { icnirpPercent },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(3.dp),
+            color = icnirpColor,
+            trackColor = Color(0x33FFFFFF)
+        )
+        Text(
+            text = "Nivel de referencia (ICNIRP ${Constants.MAG_SAFE_LIMIT_UT} µT)",
+            fontFamily = DataFontFamily,
+            fontSize = 8.sp,
+            color = Color(0x55FFFFFF)
+        )
+
+        // Safe/unsafe status
         Text(
             text = safeText,
             fontFamily = DataFontFamily,
