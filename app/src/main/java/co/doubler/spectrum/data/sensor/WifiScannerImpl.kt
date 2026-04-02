@@ -8,6 +8,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.wifi.ScanResult
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -91,6 +92,25 @@ class WifiScannerImpl @Inject constructor(
                             capabilities = scanResult.capabilities ?: "",
                             isUserNetwork = scanResult.BSSID == connectedBssid,
                             timestamp = System.currentTimeMillis(),
+                            wifiStandard = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                when (scanResult.wifiStandard) {
+                                    ScanResult.WIFI_STANDARD_LEGACY -> "WiFi Legacy"
+                                    ScanResult.WIFI_STANDARD_11N    -> "WiFi 4 (802.11n)"
+                                    ScanResult.WIFI_STANDARD_11AC   -> "WiFi 5 (802.11ac)"
+                                    ScanResult.WIFI_STANDARD_11AX   -> "WiFi 6 (802.11ax)"
+                                    6                               -> "WiFi 7 (802.11be)"
+                                    else                            -> "Desconocido"
+                                }
+                            } else "Desconocido",
+                            wpsEnabled = scanResult.capabilities.contains("WPS"),
+                            channelWidth = when (scanResult.channelWidth) {
+                                ScanResult.CHANNEL_WIDTH_20MHZ          -> "20 MHz"
+                                ScanResult.CHANNEL_WIDTH_40MHZ          -> "40 MHz"
+                                ScanResult.CHANNEL_WIDTH_80MHZ          -> "80 MHz"
+                                ScanResult.CHANNEL_WIDTH_160MHZ         -> "160 MHz"
+                                ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ -> "80+80 MHz"
+                                else                                    -> "Desconocido"
+                            },
                         )
                     }
                     trySend(signals)

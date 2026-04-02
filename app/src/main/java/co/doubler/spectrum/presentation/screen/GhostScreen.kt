@@ -361,6 +361,15 @@ private fun NetworkDetailSheet(
                 }
             }
 
+            HorizontalDivider(color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.08f), modifier = Modifier.padding(vertical = 4.dp))
+            SheetRow("ESTÁNDAR", network.wifiStandard)
+            SheetRow(
+                label = "WPS",
+                value = if (network.wpsEnabled) "Activo ⚠" else "Deshabilitado ✓",
+                valueColor = if (network.wpsEnabled) androidx.compose.ui.graphics.Color(0xFFFF8C00) else androidx.compose.ui.graphics.Color(0xFF44FF88)
+            )
+            SheetRow("ANCHO DE CANAL", network.channelWidth)
+
             // ── Interference warning ──
             if (interferenceGroup != null) {
                 HorizontalDivider(color = TextSecondary.copy(alpha = 0.15f))
@@ -397,6 +406,23 @@ private fun NetworkDetailSheet(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SheetRow(
+    label: String,
+    value: String,
+    valueColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.White
+) {
+    SheetRow(label = label) {
+        Text(
+            text = value,
+            fontFamily = DataFontFamily,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = valueColor
+        )
     }
 }
 
