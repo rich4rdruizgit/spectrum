@@ -9,6 +9,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,12 +26,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,7 +63,9 @@ import co.doubler.spectrum.rendering.ghost.GhostOverlayRenderer
 import co.doubler.spectrum.ui.theme.DataFontFamily
 import co.doubler.spectrum.ui.theme.GhostAccent
 import co.doubler.spectrum.ui.theme.GhostLabelBackground
+import co.doubler.spectrum.ui.theme.GhostWaveGreen
 import co.doubler.spectrum.ui.theme.NearBlack
+import co.doubler.spectrum.ui.theme.TextPrimary
 import co.doubler.spectrum.ui.theme.TextSecondary
 import co.doubler.spectrum.ui.theme.WarningAmber
 import co.doubler.spectrum.util.PermissionGroups
@@ -119,6 +127,8 @@ private fun GhostArContent(
         )
     }
 
+    var selectedNetwork by remember { mutableStateOf<GhostNetwork?>(null) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         ArSceneView(
             sessionManager = viewModel.sessionManager,
@@ -139,6 +149,7 @@ private fun GhostArContent(
                         if (screenX in 0..4000 && screenY in 0..4000) {
                             GhostLabel(
                                 network = network,
+                                onClick = { selectedNetwork = network },
                                 modifier = Modifier.offset {
                                     IntOffset(screenX, screenY)
                                 }
@@ -166,6 +177,15 @@ private fun GhostArContent(
             )
         }
     }
+
+    // ── Network detail bottom sheet ──
+    selectedNetwork?.let { network ->
+        NetworkDetailSheet(
+            network = network,
+            interferenceGroups = uiState.interferenceGroups,
+            onDismiss = { selectedNetwork = null }
+        )
+    }
 }
 
 // ── Ghost Label (floating AR label) ─────────────────────────────────
@@ -178,6 +198,7 @@ private fun GhostArContent(
 @Composable
 private fun GhostLabel(
     network: GhostNetwork,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val waveColor = androidx.compose.ui.graphics.Color(network.color)
@@ -186,6 +207,7 @@ private fun GhostLabel(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
             .background(GhostLabelBackground)
+            .clickable(onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -205,6 +227,190 @@ private fun GhostLabel(
             maxLines = 1
         )
     }
+}
+
+// ── Network Detail Bottom Sheet ──────────────────────────────────────
+
+@Composable
+private fun NetworkDetailSheet(
+    network: GhostNetwork,
+    interferenceGroups: List<InterferenceGroup>,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val waveColor = androidx.compose.ui.graphics.Color(network.color)
+    val interferenceGroup = interferenceGroups.find { g -> g.networks.any { it.bssid == network.bssid } }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = NearBlack
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // ── Header ──
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Router,
+                    contentDescription = null,
+                    tint = waveColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = network.ssid.ifEmpty { "Hidden Network" },
+                        fontFamily = DataFontFamily,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = waveColor
+                    )
+                    Text(
+                        text = network.bssid.uppercase(),
+                        fontFamily = DataFontFamily,
+                        fontSize = 11.sp,
+                        color = TextSecondary
+                    )
+                }
+                if (network.isUserNetwork) {
+                    Text(
+                        text = "CONNECTED",
+                        fontFamily = DataFontFamily,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GhostWaveGreen,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(GhostWaveGreen.copy(alpha = 0.12f))
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            HorizontalDivider(color = TextSecondary.copy(alpha = 0.15f))
+
+            // ── Signal ──
+            SheetRow(label = "SEÑAL") {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${network.rssi} dBm",
+                            fontFamily = DataFontFamily,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = signalColor(network.signalStrength)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        LinearProgressIndicator(
+                            progress = { network.signalStrength },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp)),
+                            color = signalColor(network.signalStrength),
+                            trackColor = TextSecondary.copy(alpha = 0.15f)
+                        )
+                    }
+                }
+            }
+
+            // ── Channel / Band / Distance ──
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                SheetStat(label = "CANAL", value = network.channel.toString())
+                SheetStat(label = "BANDA", value = frequencyBandLabel(network.frequency))
+                SheetStat(label = "DISTANCIA", value = "~${"%.1f".format(network.estimatedDistance)} m")
+            }
+
+            // ── Interference warning ──
+            if (interferenceGroup != null) {
+                HorizontalDivider(color = TextSecondary.copy(alpha = 0.15f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(WarningAmber.copy(alpha = 0.08f))
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = WarningAmber,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Column {
+                        Text(
+                            text = "INTERFERENCIA — Canal ${interferenceGroup.channel}",
+                            fontFamily = DataFontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WarningAmber
+                        )
+                        Text(
+                            text = "${interferenceGroup.networks.size} redes comparten este canal",
+                            fontFamily = DataFontFamily,
+                            fontSize = 10.sp,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SheetRow(label: String, content: @Composable RowScope.() -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = label,
+            fontFamily = DataFontFamily,
+            fontSize = 10.sp,
+            color = TextSecondary,
+            letterSpacing = 1.sp,
+            modifier = Modifier.width(80.dp)
+        )
+        content()
+    }
+}
+
+@Composable
+private fun SheetStat(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            fontFamily = DataFontFamily,
+            fontSize = 9.sp,
+            color = TextSecondary,
+            letterSpacing = 1.sp
+        )
+        Text(
+            text = value,
+            fontFamily = DataFontFamily,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = TextPrimary
+        )
+    }
+}
+
+private fun signalColor(strength: Float) = when {
+    strength >= 0.7f -> androidx.compose.ui.graphics.Color(0xFF76FF03)
+    strength >= 0.4f -> androidx.compose.ui.graphics.Color(0xFFFFAB00)
+    else             -> androidx.compose.ui.graphics.Color(0xFFFF5252)
+}
+
+private fun frequencyBandLabel(frequencyMhz: Int): String = when (frequencyMhz) {
+    in 2412..2484 -> "2.4 GHz"
+    in 5170..5885 -> "5 GHz"
+    in 5955..7115 -> "6 GHz"
+    else           -> "${frequencyMhz} MHz"
 }
 
 // ── Collapsible Network Panel ────────────────────────────────────────
