@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -56,6 +57,8 @@ class BluetoothViewModel @Inject constructor(
     private var rotationListener: SensorEventListener? = null
     private val rotationMatrix = FloatArray(9)
     private val orientationAngles = FloatArray(3)
+    private var previousHeadingDeg: Float? = null
+    private var previousTimestampNs: Long? = null
 
     init {
         observeBluetoothScans()
@@ -69,6 +72,8 @@ class BluetoothViewModel @Inject constructor(
 
     fun deactivateEcholocation() {
         unregisterRotationListener()
+        previousHeadingDeg = null
+        previousTimestampNs = null
         _uiState.update { it.copy(echolocationState = EcholocationState.Idle) }
     }
 
@@ -80,16 +85,33 @@ class BluetoothViewModel @Inject constructor(
                 SensorManager.getOrientation(rotationMatrix, orientationAngles)
                 val headingDeg = ((Math.toDegrees(orientationAngles[0].toDouble()).toFloat() + 360f) % 360f)
                 val rssi = _uiState.value.devices.find { it.address == address }?.rssi ?: return
-                tracker.record(headingDeg, rssi)
-                val confidence = tracker.getConfidence()
-                val bestHeading = tracker.getBestHeading()
-                if (confidence >= 0.4f && bestHeading != null) {
+
+                val prevHeading = previousHeadingDeg
+                val prevTs = previousTimestampNs
+                val speed = if (prevHeading != null && prevTs != null) {
+                    val dt = (event.timestamp - prevTs) / 1_000_000_000f
+                    if (dt > 0) angularDiff(headingDeg, prevHeading) / dt else 0f
+                } else 0f
+                previousHeadingDeg = headingDeg
+                previousTimestampNs = event.timestamp
+
+                tracker.record(headingDeg, rssi, speed)
+
+                val isFast = tracker.isFastRotation
+                _uiState.update { s ->
+                    val eco = s.echolocationState
+                    if (eco is EcholocationState.Active)
+                        s.copy(echolocationState = eco.copy(rotationTooFast = isFast))
+                    else s.copy()
+                }
+
+                val confidence = tracker.getHybridConfidence()
+                val bestHeading = tracker.getHybridHeading()
+                if (confidence >= 0.35f && bestHeading != null) {
                     unregisterRotationListener()
                     _uiState.update {
                         it.copy(echolocationState = EcholocationState.Result(address, bestHeading, confidence))
                     }
-                } else {
-                    _uiState.update { it.copy() }
                 }
             }
             override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
@@ -212,6 +234,11 @@ class BluetoothViewModel @Inject constructor(
     fun normalizeSignalStrength(rssi: Int): Float {
         return ((rssi - BT_RSSI_MIN).toFloat() / (BT_RSSI_MAX - BT_RSSI_MIN))
             .coerceIn(0f, 1f)
+    }
+
+    private fun angularDiff(a: Float, b: Float): Float {
+        val diff = abs(a - b) % 360f
+        return if (diff > 180f) 360f - diff else diff
     }
 
     private fun lerp(a: Float, b: Float, t: Float): Float = a + (b - a) * t.coerceIn(0f, 1f)

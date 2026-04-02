@@ -34,13 +34,14 @@ fun EcholocationOverlay(
     modifier: Modifier = Modifier
 ) {
     val tracker = (state as? EcholocationState.Active)?.tracker
+    val isFast = (state as? EcholocationState.Active)?.rotationTooFast ?: false
     val heading: Float? = when (state) {
-        is EcholocationState.Active -> state.tracker.getBestHeading()
+        is EcholocationState.Active -> state.tracker.getHybridHeading()
         is EcholocationState.Result -> state.bestHeading
         else -> return
     }
     val confidence: Float = when (state) {
-        is EcholocationState.Active -> state.tracker.getConfidence()
+        is EcholocationState.Active -> state.tracker.getHybridConfidence()
         is EcholocationState.Result -> state.confidence
         else -> return
     }
@@ -73,6 +74,15 @@ fun EcholocationOverlay(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
+
+            if (isFast) {
+                Text(
+                    text = "Más despacio",
+                    color = Color(0xFFFF8C00),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
             Canvas(modifier = Modifier.size(200.dp)) {
                 val center = Offset(size.width / 2f, size.height / 2f)
@@ -129,7 +139,7 @@ fun EcholocationOverlay(
             Text(
                 text = "CONFIANZA: ${(confidence * 100).toInt()}%",
                 fontFamily = DataFontFamily,
-                color = if (confidence >= 0.4f) BluetoothAccent else Color.White.copy(alpha = 0.6f),
+                color = if (confidence >= 0.35f) BluetoothAccent else Color.White.copy(alpha = 0.6f),
                 fontSize = 13.sp
             )
         }
